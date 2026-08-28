@@ -1,0 +1,3 @@
+-- Schemat jest automatycznie tworzony i migrowany przy uruchomieniu server.js.
+-- Tabele: users, posts, forum_threads, forum_replies, media, post_likes, reply_likes.
+-- Konto administratora prototypu: admin@mimcryhunters.local / Admin123!
