@@ -1,2 +1,35 @@
-<!DOCTYPE html><html lang="pl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin — Mimcry Hunters</title><link rel="stylesheet" href="/css/style.css"></head><body>
-<header><a class="logo" href="/">MIMCRY<span> HUNTERS</span></a><nav><a href="/">Witryna</a><a class="active" href="/admin.html">Panel admina</a></nav><div class="actions"><span class="badge">ADMIN</span><a class="btn ghost" href="/profile.html">Profil</a><button id="logout" class="btn ghost">Wyloguj</button></div></header><main class="page"><div class="eyebrow">ZARZĄDZANIE</div><h1>DASHBOARD</h1><div id="stats" class="stats"></div><div class="admin-panel"><h2>DODAJ DEVLOG</h2><form id="postForm"><input name="title" placeholder="Tytuł" required><input name="category" placeholder="Kategoria" value="Devlog"><textarea name="content" placeholder="Treść" required></textarea><button class="btn">Dodaj</button></form></div><div id="adminMessage"></div></main><script src="/js/app.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Admin — Mimcry Experiments</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header>
+    <a class="logo" href="/">MIMCRY<span> EXPERIMENTS</span></a>
+    <nav><a href="/">Witryna</a><a class="active" href="/admin.html">Panel admina</a></nav>
+    <div class="actions">
+        <span class="badge">ADMIN</span>
+        <a class="btn ghost" href="/profile.html">Profil</a>
+        <button id="logout" class="btn ghost">Wyloguj</button>
+    </div>
+</header>
+<main class="page">
+    <div class="eyebrow">ZARZĄDZANIE</div>
+    <h1>DASHBOARD</h1>
+    <div id="stats" class="stats"></div>
+    <div class="admin-panel">
+        <h2>DODAJ DEVLOG</h2>
+        <form id="postForm">
+            <input name="title" placeholder="Tytuł" required>
+            <input name="category" placeholder="Kategoria" value="Devlog">
+            <textarea name="content" placeholder="Treść" required></textarea>
+            <button class="btn">Dodaj</button>
+        </form>
+    </div>
+    <div id="adminMessage"></div>
+</main>
+<script src="/js/app.js"></script>
+</body>
+</html>
