@@ -371,7 +371,7 @@ const uploadDir = path.join(__dirname, 'public', 'uploads');
 fs.mkdirSync(databaseDir, { recursive: true });
 fs.mkdirSync(uploadDir, { recursive: true });
 
-// Inicjalizacja bazy danych i ustawienie trybu WAL (zabezpieczenie przed wyciekami natywnymi)
+// Inicjalizacja bazy danych i ustawienie trybu WAL
 const db = new Database(path.join(databaseDir, 'mimcry.db'));
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
@@ -441,12 +441,12 @@ CREATE TABLE IF NOT EXISTS reply_likes (
 );
 `);
 
-// Migracja istniejącej bazy
+// Migracja bazy
 const userColumns = db.prepare('PRAGMA table_info(users)').all().map(c => c.name);
 if (!userColumns.includes('bio')) db.exec("ALTER TABLE users ADD COLUMN bio TEXT NOT NULL DEFAULT ''");
 if (!userColumns.includes('avatar_url')) db.exec("ALTER TABLE users ADD COLUMN avatar_url TEXT NOT NULL DEFAULT ''");
 
-// Przygotowane zapytania stałe (rozwiązuje crash C++ z (env) != nullptr)
+// Statyczne, przygotowane zapytania (zapobiegają wyciekom pamięci w V8)
 const stmtGetUserByEmail = db.prepare('SELECT * FROM users WHERE email = ?');
 const stmtGetUserById = db.prepare('SELECT * FROM users WHERE id = ?');
 const stmtGetUserByUsername = db.prepare('SELECT * FROM users WHERE username = ?');
@@ -462,21 +462,23 @@ const postCount = db.prepare('SELECT COUNT(*) AS count FROM posts').get().count;
 if (!postCount) {
     const adminUser = db.prepare('SELECT id FROM users WHERE role = ? LIMIT 1').get('admin');
     const seed = db.prepare('INSERT INTO posts (user_id,title,content,category) VALUES (?,?,?,?)');
-    seed.run(adminUser.id, 'Witamy w wymiarze Mimcry', 'Rozpoczynamy dziennik produkcji. Naukowcy są uwięzieni w miejscu, którego nie powinno być.', 'Devlog');
-    seed.run(adminUser.id, 'Projektowanie demona', 'Pierwsze testy sylwetki i zachowania przeciwnika. Demon jest rezultatem badań zespołu.', 'Design');
-    seed.run(adminUser.id, 'Zagadki i eksploracja', 'Budujemy system zagadek oparty na dokumentach, terminalach i obserwacji otoczenia.', 'Gameplay');
+    seed.run(adminUser.id, 'Witamy w wymiarze Mimcry', 'Rozpoczynamy dziennik produkcji.', 'Devlog');
+    seed.run(adminUser.id, 'Projektowanie demona', 'Pierwsze testy sylwetki przeciwnika.', 'Design');
+    seed.run(adminUser.id, 'Zagadki i eksploracja', 'Budujemy system zagadek.', 'Gameplay');
 }
 
-// --- KONFIGURACJA WIDOKÓW TWIG ---
+// Konfiguracja widoków Twig
 app.set('view engine', 'twig');
 app.set('views', path.join(__dirname, 'views'));
-app.set('twig options', { cache: false });
+app.set('twig options', { cache: false, allow_async: true });
 
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Zamyka nieaktywne połączenia, zapobiegając zawieszaniu sterty C++
 app.use((req, res, next) => {
+    res.setHeader('Connection', 'close');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     next();
 });
@@ -526,8 +528,7 @@ function publicUser(user) {
     };
 }
 
-// --- RENDEROWANIE WIDOKÓW TWIG ---
-
+// Renderowanie Widoków
 app.get('/', (req, res) => res.render('index.twig', { activePage: 'index' }));
 app.get('/gallery', (req, res) => res.render('gallery.twig', { activePage: 'gallery' }));
 app.get('/devlog', (req, res) => res.render('devlog.twig', { activePage: 'devlog' }));
@@ -545,8 +546,7 @@ app.get('/profile', (req, res) => {
     res.render('profile.twig', { activePage: 'profile' });
 });
 
-// --- PUNKTY REST API ---
-
+// REST API
 app.post('/api/auth/register', (req, res) => {
     const username = String(req.body.username || '').trim();
     const email = String(req.body.email || '').trim().toLowerCase();
@@ -563,18 +563,23 @@ app.post('/api/auth/register', (req, res) => {
 });
 
 app.post('/api/auth/login', (req, res) => {
-    const email = String(req.body.email || '').trim().toLowerCase();
-    const password = String(req.body.password || '');
+    try {
+        const email = String(req.body.email || '').trim().toLowerCase();
+        const password = String(req.body.password || '').trim();
 
-    // Użycie przygotowanego statycznego zapytania
-    const user = stmtGetUserByEmail.get(email);
+        const user = stmtGetUserByEmail.get(email);
 
-    if (!user || !bcrypt.compareSync(password, user.password_hash))
-        return res.status(401).json({ error: 'Nieprawidłowy e-mail lub hasło' });
+        if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+            return res.status(401).json({ error: 'Nieprawidłowy e-mail lub hasło' });
+        }
 
-    const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '2h' });
-    res.cookie('token', token, { httpOnly: true, maxAge: 2 * 3600 * 1000 });
-    res.json({ token, user: publicUser(user) });
+        const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '2h' });
+        res.cookie('token', token, { httpOnly: true, maxAge: 2 * 3600 * 1000 });
+        return res.json({ token, user: publicUser(user) });
+    } catch (err) {
+        console.error('Błąd logowania:', err);
+        return res.status(500).json({ error: 'Błąd serwera podczas logowania' });
+    }
 });
 
 app.get('/api/me', auth, (req, res) => {
@@ -762,18 +767,27 @@ app.get('/api/admin/stats', auth, admin, (req, res) => {
     res.json({ users, posts, threads, media });
 });
 
-// Wypadkowy widok dla ścieżek
+// Wypadkowy widok dla pozostałych ścieżek
 app.get('/{*splat}', (req, res) => {
     res.render('index.twig', { activePage: 'index' });
 });
 
-// Zamykanie połączenia z bazą podczas wyłączania serwera
+// Zabezpieczenie przed nieobsłużonymi błędami i prawidłowe czyszczenie bazy
+process.on('uncaughtException', (err) => {
+    console.error('Nieobsłużony błąd:', err);
+});
+
 function shutdown() {
-    console.log('\nZamykanie serwera i bazy danych...');
-    try { db.close(); } catch { }
+    try {
+        if (db && db.open) db.close();
+    } catch { }
     process.exit(0);
 }
+
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
+process.on('exit', () => {
+    try { if (db && db.open) db.close(); } catch { }
+});
 
 app.listen(PORT, () => console.log(`Mimcry Hunters z obsługą Twig: http://localhost:${PORT}`));

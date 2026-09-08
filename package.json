@@ -1,11 +1,11 @@
-{
+﻿{
   "name": "mimcry-hunters-portal",
   "version": "1.0.0",
   "description": "Full-stack prototype for Mimcry Hunters",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "nodemon -e js,twig,css server.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
@@ -15,5 +15,8 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "twig": "^3.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }
