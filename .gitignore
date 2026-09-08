@@ -24,7 +24,7 @@ pnpm-debug.log*
 
 .idea/
 .vscode/
-
+.vs/
 
 # =========================
 # Database

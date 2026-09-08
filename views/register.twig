@@ -1,13 +1,12 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Rejestracja — Mimcry Experiments</title>
-    <link rel="stylesheet" href="/css/style.css">
-</head>
-<body class="auth">
-<a class="logo" href="/">MIMCRY<span> EXPERIMENTS</span></a>
+﻿{% extends 'layout.twig' %}
+{% block title %}MIMICRY EXPERIMENTS - Logowanie{% endblock %}
+
+{% block body_class %}auth{% endblock %}
+{% block header %}{% endblock %}
+
+{% block main_wrapper %}
+
+<a class="logo" href="/">MIMICRY<span> EXPERIMENTS</span></a>
 <main class="auth-card">
     <div class="eyebrow">SPOŁECZNOŚĆ</div>
     <h1>UTWÓRZ KONTO</h1>
@@ -18,9 +17,8 @@
         <label><input type="checkbox" required> Akceptuję regulamin</label>
         <button class="btn">Utwórz konto</button>
     </form>
-    <p>Masz już konto? <a href="/login.html">Zaloguj się</a></p>
+    <p>Masz już konto? <a href="/login">Zaloguj się</a></p>
     <div id="message"></div>
 </main>
-<script src="/js/app.js"></script>
-</body>
-</html>
+
+{% endblock %}

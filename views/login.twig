@@ -1,0 +1,20 @@
+﻿{% extends 'layout.twig' %}
+{% block title %}MIMICRY EXPERIMENTS - Logowanie{% endblock %}
+
+{% block body_class %}auth{% endblock %}
+{% block header %}{% endblock %}
+
+{% block main_wrapper %}
+<a class="logo" href="/">MIMICRY<span> EXPERIMENTS</span></a>
+<main class="auth-card">
+    <div class="eyebrow">KONTO</div>
+    <h1>ZALOGUJ SIĘ</h1>
+    <form id="loginForm">
+        <input name="email" type="email" placeholder="E-mail" required>
+        <input name="password" type="password" placeholder="Hasło" required>
+        <button class="btn">Zaloguj</button>
+    </form>
+    <p>Nie masz konta? <a href="/register">Zarejestruj się</a></p>
+    <div id="message"></div>
+</main>
+{% endblock %}
