@@ -439,6 +439,14 @@ CREATE TABLE IF NOT EXISTS reply_likes (
   FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY(reply_id) REFERENCES forum_replies(id) ON DELETE CASCADE
 );
+CREATE TABLE IF NOT EXISTS gallery_images (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  title TEXT NOT NULL DEFAULT '',
+  image_url TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+);
 `);
 
 // Migracja bazy
@@ -479,7 +487,11 @@ app.use(cookieParser());
 // Zamyka nieaktywne połączenia, zapobiegając zawieszaniu sterty C++
 app.use((req, res, next) => {
     res.setHeader('Connection', 'close');
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    //res.setHeader('Content-Type', 'text/html; charset=utf-8');
     next();
 });
 
@@ -530,7 +542,11 @@ function publicUser(user) {
 
 // Renderowanie Widoków
 app.get('/', (req, res) => res.render('index.twig', { activePage: 'index' }));
-app.get('/gallery', (req, res) => res.render('gallery.twig', { activePage: 'gallery' }));
+app.get('/gallery', (req, res) => {
+    res.render('gallery.twig', { activePage: 'gallery' });
+});
+    //res.render('gallery.twig', { activePage: 'gallery' }));
+
 app.get('/devlog', (req, res) => res.render('devlog.twig', { activePage: 'devlog' }));
 app.get('/forum', (req, res) => res.render('forum.twig', { activePage: 'forum' }));
 app.get('/login', (req, res) => res.render('login.twig', { activePage: 'login' }));
@@ -545,6 +561,13 @@ app.get('/profile', (req, res) => {
     if (!req.user) return res.redirect('/login');
     res.render('profile.twig', { activePage: 'profile' });
 });
+
+
+app.get('/logout', (req, res) => {
+    res.clearCookie('token');
+    res.redirect('/');
+});
+
 
 // REST API
 app.post('/api/auth/register', (req, res) => {
@@ -766,6 +789,66 @@ app.get('/api/admin/stats', auth, admin, (req, res) => {
     const media = db.prepare('SELECT COUNT(*) c FROM media').get().c;
     res.json({ users, posts, threads, media });
 });
+
+
+app.get('/api/gallery', (req, res) => {
+    try {
+        const images = db.prepare(`
+            SELECT g.*, u.username AS author 
+            FROM gallery_images g 
+            JOIN users u ON u.id = g.user_id 
+            ORDER BY g.created_at DESC
+        `).all();
+        res.json(images);
+    } catch (err) {
+        res.status(500).json({ error: 'Błąd podczas pobierania zdjęć galerii' });
+    }
+});
+
+// Wgrywanie nowego zdjęcia do galerii (tylko ADMIN)
+app.post('/api/gallery', auth, admin, upload.single('image'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'Nie przesłano pliku obrazu' });
+
+    const title = String(req.body.title || '').trim();
+    const ext = path.extname(req.file.originalname).toLowerCase() || '.jpg';
+    const finalName = `gallery-${Date.now()}${ext}`;
+    const finalPath = path.join(uploadDir, finalName);
+
+    try {
+        fs.renameSync(req.file.path, finalPath);
+        const imageUrl = `/uploads/${finalName}`;
+
+        const result = db.prepare(`
+            INSERT INTO gallery_images (user_id, title, image_url) 
+            VALUES (?, ?, ?)
+        `).run(req.user.id, title, imageUrl);
+
+        res.status(201).json({ id: result.lastInsertRowid, image_url: imageUrl, title });
+    } catch (err) {
+        if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        res.status(500).json({ error: 'Błąd podczas zapisywania zdjęcia' });
+    }
+});
+
+// Usuwanie zdjęcia z galerii (tylko ADMIN)
+app.delete('/api/gallery/:id', auth, admin, (req, res) => {
+    try {
+        const image = db.prepare('SELECT * FROM gallery_images WHERE id = ?').get(req.params.id);
+        if (!image) return res.status(404).json({ error: 'Zdjęcie nie istnieje' });
+
+        // Usuwanie pliku fizycznego z serwera
+        const filePath = path.join(__dirname, 'public', image.image_url.replace(/^\//, ''));
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+
+        db.prepare('DELETE FROM gallery_images WHERE id = ?').run(req.params.id);
+        res.json({ message: 'Zdjęcie zostało usunięte z galerii' });
+    } catch (err) {
+        res.status(500).json({ error: 'Błąd podczas usuwania zdjęcia' });
+    }
+});
+
 
 // Wypadkowy widok dla pozostałych ścieżek
 app.get('/{*splat}', (req, res) => {

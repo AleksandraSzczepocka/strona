@@ -1,4 +1,4 @@
-const token = () => localStorage.getItem('mh_token');
+﻿const token = () => localStorage.getItem('mh_token');
 
 async function api(url, opts = {}) {
   opts.headers = {
@@ -42,11 +42,17 @@ async function loadCurrentUser() {
   }
 }
 
+//function logout() {
+//    localStorage.removeItem('mh_token');
+//    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+//  location.href = '/';
+//}
+
 function logout() {
     localStorage.removeItem('mh_token');
-    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-  location.href = '/';
-}
+    window.location.href = '/logout';
+};
+
 
 async function loadPosts() {
   const el = document.getElementById('posts');
@@ -141,6 +147,135 @@ async function loadStats() {
   try { const s=await api('/api/admin/stats'); el.innerHTML=Object.entries(s).map(([k,v])=>`<div class="stat"><small>${k}</small><strong>${v}</strong></div>`).join(''); }
   catch(e) { el.textContent=e.message; }
 }
+
+
+
+
+let galleryData = [];
+let currentImageIndex = 0;
+
+async function loadGallery() {
+    const grid = document.getElementById('galleryGrid');
+    if (!grid) return;
+
+    try {
+        galleryData = await api('/api/gallery');
+        const currentUser = token() ? await api('/api/me').catch(() => null) : null;
+        const isAdmin = currentUser?.role === 'admin';
+
+        if (!galleryData.length) {
+            grid.innerHTML = '<div class="empty">Brak zdjęć w galerii.</div>';
+            return;
+        }
+
+        grid.innerHTML = galleryData.map((img, idx) => `
+            <div class="gallery-card" data-index="${idx}">
+                <img src="${esc(img.image_url)}" alt="${esc(img.title)}" loading="lazy">
+                <div class="card-info">
+                    <span>${esc(img.title || 'Bez tytułu')}</span>
+                    ${isAdmin ? `<button class="btn-delete-img" data-delete-id="${img.id}">Usuń</button>` : ''}
+                </div>
+            </div>
+        `).join('');
+
+     
+        grid.querySelectorAll('.gallery-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                if (e.target.classList.contains('btn-delete-img')) return;
+                openLightbox(parseInt(card.dataset.index, 10));
+            });
+        });
+
+        
+        grid.querySelectorAll('[data-delete-id]').forEach(btn => {
+            btn.onclick = async (e) => {
+                e.stopPropagation();
+                if (!confirm('Czy na pewno chcesz usunąć to zdjęcie?')) return;
+                try {
+                    await api('/api/gallery/' + btn.dataset.deleteId, { method: 'DELETE' });
+                    loadGallery();
+                } catch (err) {
+                    alert(err.message);
+                }
+            };
+        });
+
+    } catch (err) {
+        grid.innerHTML = `<div class="empty">${esc(err.message)}</div>`;
+    }
+}
+
+
+function openLightbox(index) {
+    if (index < 0 || index >= galleryData.length) return;
+    currentImageIndex = index;
+    const item = galleryData[currentImageIndex];
+
+    const lb = document.getElementById('lightbox');
+    const lbImg = document.getElementById('lightboxImg');
+    const lbCaption = document.getElementById('lightboxCaption');
+
+    lbImg.src = item.image_url;
+    lbCaption.textContent = item.title ? `${item.title} (Autor: ${item.author})` : `Autor: ${item.author}`;
+    lb.style.display = 'flex';
+}
+
+function closeLightbox() {
+    const lb = document.getElementById('lightbox');
+    if (lb) lb.style.display = 'none';
+}
+
+function setupGalleryEvents() {
+    
+    const form = document.getElementById('galleryUploadForm');
+    if (form) {
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const msgEl = document.getElementById('galleryAdminMsg');
+            try {
+                const formData = new FormData(form);
+                await api('/api/gallery', {
+                    method: 'POST',
+                    body: formData
+                });
+                form.reset();
+                if (msgEl) msgEl.textContent = 'Zdjęcie pomyślnie dodane!';
+                loadGallery();
+            } catch (err) {
+                if (msgEl) msgEl.textContent = err.message;
+            }
+        };
+    }
+
+    
+    const lb = document.getElementById('lightbox');
+    if (!lb) return;
+
+    lb.querySelector('.lightbox-close').onclick = closeLightbox;
+    lb.querySelector('.lightbox-prev').onclick = () => openLightbox(currentImageIndex - 1);
+    lb.querySelector('.lightbox-next').onclick = () => openLightbox(currentImageIndex + 1);
+
+   
+    lb.onclick = (e) => {
+        if (e.target === lb) closeLightbox();
+    };
+
+    
+    document.addEventListener('keydown', (e) => {
+        if (lb.style.display !== 'flex') return;
+        if (e.key === 'Escape') closeLightbox();
+        if (e.key === 'ArrowLeft') openLightbox(currentImageIndex - 1);
+        if (e.key === 'ArrowRight') openLightbox(currentImageIndex + 1);
+    });
+}
+
+// Inicjalizacja przy ładowaniu strony
+document.addEventListener('DOMContentLoaded', () => {
+    loadGallery();
+    setupGalleryEvents();
+});
+
+
 
 document.addEventListener('DOMContentLoaded', () => {
   loadCurrentUser();

@@ -1,20 +1,53 @@
-{% extends 'layout.twig' %}
+﻿{% extends 'layout.twig' %}
 {% block title %}MIMICRY EXPERIMENTS - Galeria{% endblock %}
 
 {% block content %}
-    
-    <main class="page">
-        <div class="eyebrow">MATERIA�Y</div>
-        <h1>GALERIA</h1>
-        <p class="lead">Fragmenty wymiaru, dokumentacja bada� i materia�y z produkcji.</p>
-        <div class="gallery">
-            <div class="shot s1">LABORATORIUM 04</div>
-            <div class="shot s2">ENTITY / MIMCRY</div>
-            <div class="shot s3">KORYTARZ B</div>
-            <div class="shot s4">ARCHIWUM</div>
-            <div class="shot s5">ANOMALIA</div>
-            <div class="shot s6">SEKTOR ZERO</div>
-        </div>
-    </main>
+
+<!--<main class="page">
+    <div class="eyebrow">MATERIAŁY</div>
+    <h1>GALERIA</h1>
+    <p class="lead">Fragmenty wymiaru, dokumentacja badań i materiały z produkcji.</p>
+    <div class="gallery">
+        <div class="shot s1">LABORATORIUM 04</div>
+        <div class="shot s2">ENTITY / MIMCRY</div>
+        <div class="shot s3">KORYTARZ B</div>
+        <div class="shot s4">ARCHIWUM</div>
+        <div class="shot s5">ANOMALIA</div>
+        <div class="shot s6">SEKTOR ZERO</div>
+    </div>
+</main>-->
+
+<main class="page">
+    <div class="eyebrow">MATERIAŁY</div>
+    <h1>GALERIA</h1>
+    <p class="lead">Fragmenty wymiaru, dokumentacja badań i materiały z produkcji.</p>
+
+    {% if user and user.role == 'admin' %}
+    <section class="admin-panel" style="margin-bottom: 2rem;">
+        <h2>DODAJ ZDJĘCIE DO GALERII</h2>
+        <form id="galleryUploadForm" class="form-grid" enctype="multipart/form-data">
+            <input type="text" name="title" placeholder="Tytuł / Opis zdjęcia" required>
+            <input type="file" name="image" accept="image/png,image/jpeg,image/webp,image/gif" required>
+            <button class="btn" type="submit">Wgraj zdjęcie</button>
+        </form>
+        <div id="galleryAdminMsg"></div>
+    </section>
+    {% endif %}
+
+    {# Dynamiczny kontener galerii #}
+    <div id="galleryGrid" class="gallery">
+        <div class="empty">Ładowanie zdjęć z bazy danych…</div>
+    </div>
+</main>
+
+<div id="lightbox" class="lightbox-modal" style="display: none;">
+    <span class="lightbox-close">&times;</span>
+    <button class="lightbox-prev">&#10094;</button>
+    <div class="lightbox-content">
+        <img id="lightboxImg" src="" alt="Powiększenie">
+        <div id="lightboxCaption" class="lightbox-caption"></div>
+    </div>
+    <button class="lightbox-next">&#10095;</button>
+</div>
 
 {% endblock %}
