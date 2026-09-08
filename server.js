@@ -361,6 +361,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const cookieParser = require('cookie-parser');
+const { registerSchema, postSchema, profileSchema, forumThreadSchema, validate } = require('./src/validators');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -486,7 +487,7 @@ app.use(cookieParser());
 
 // Zamyka nieaktywne połączenia, zapobiegając zawieszaniu sterty C++
 app.use((req, res, next) => {
-    res.setHeader('Connection', 'close');
+    //res.setHeader('Connection', 'close');
 
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.setHeader('Pragma', 'no-cache');
@@ -570,12 +571,24 @@ app.get('/logout', (req, res) => {
 
 
 // REST API
-app.post('/api/auth/register', (req, res) => {
-    const username = String(req.body.username || '').trim();
-    const email = String(req.body.email || '').trim().toLowerCase();
-    const password = String(req.body.password || '');
-    if (!username || !email || !password || password.length < 8)
-        return res.status(400).json({ error: 'Podaj nazwę, poprawny e-mail i hasło min. 8 znaków' });
+//app.post('/api/auth/register', (req, res) => {
+//    const username = String(req.body.username || '').trim();
+//    const email = String(req.body.email || '').trim().toLowerCase();
+//    const password = String(req.body.password || '');
+//    if (!username || !email || !password || password.length < 8)
+//        return res.status(400).json({ error: 'Podaj nazwę, poprawny e-mail i hasło min. 8 znaków' });
+//    try {
+//        const hash = bcrypt.hashSync(password, 10);
+//        const result = db.prepare('INSERT INTO users(username,email,password_hash) VALUES(?,?,?)').run(username, email, hash);
+//        res.status(201).json({ id: result.lastInsertRowid, message: 'Konto utworzone' });
+//    } catch {
+//        res.status(409).json({ error: 'Nazwa użytkownika lub e-mail jest już zajęty' });
+//    }
+//});
+
+app.post('/api/auth/register', validate(registerSchema), (req, res) => {
+    const { username, email, password } = req.body;
+
     try {
         const hash = bcrypt.hashSync(password, 10);
         const result = db.prepare('INSERT INTO users(username,email,password_hash) VALUES(?,?,?)').run(username, email, hash);
@@ -650,14 +663,27 @@ app.get('/api/profile/:username', optionalAuth, (req, res) => {
     res.json({ user: publicUser(user), posts, replies, likedPosts, likedReplies });
 });
 
-app.put('/api/me/profile', auth, (req, res) => {
-    const current = stmtGetUserById.get(req.user.id);
-    if (!current) return res.status(404).json({ error: 'Użytkownik nie istnieje' });
-    const username = String(req.body.username ?? current.username).trim();
-    const email = String(req.body.email ?? current.email).trim().toLowerCase();
-    const bio = String(req.body.bio ?? '').trim().slice(0, 500);
-    if (username.length < 3) return res.status(400).json({ error: 'Nazwa użytkownika musi mieć min. 3 znaki' });
-    if (!email) return res.status(400).json({ error: 'E-mail jest wymagany' });
+//app.put('/api/me/profile', auth, (req, res) => {
+//    const current = stmtGetUserById.get(req.user.id);
+//    if (!current) return res.status(404).json({ error: 'Użytkownik nie istnieje' });
+//    const username = String(req.body.username ?? current.username).trim();
+//    const email = String(req.body.email ?? current.email).trim().toLowerCase();
+//    const bio = String(req.body.bio ?? '').trim().slice(0, 500);
+//    if (username.length < 3) return res.status(400).json({ error: 'Nazwa użytkownika musi mieć min. 3 znaki' });
+//    if (!email) return res.status(400).json({ error: 'E-mail jest wymagany' });
+//    try {
+//        db.prepare('UPDATE users SET username=?, email=?, bio=? WHERE id=?').run(username, email, bio, req.user.id);
+//        const updated = stmtGetUserById.get(req.user.id);
+//        const token = jwt.sign({ id: updated.id, username: updated.username, role: updated.role }, JWT_SECRET, { expiresIn: '2h' });
+//        res.cookie('token', token, { httpOnly: true, maxAge: 2 * 3600 * 1000 });
+//        res.json({ user: publicUser(updated), token });
+//    } catch {
+//        res.status(409).json({ error: 'Nazwa użytkownika lub e-mail jest już zajęty' });
+//    }
+//});
+
+app.put('/api/me/profile', auth, validate(profileSchema), (req, res) => {
+    const { username, email, bio } = req.body;
     try {
         db.prepare('UPDATE users SET username=?, email=?, bio=? WHERE id=?').run(username, email, bio, req.user.id);
         const updated = stmtGetUserById.get(req.user.id);
@@ -705,10 +731,17 @@ app.get('/api/posts', optionalAuth, (req, res) => {
     res.json(posts);
 });
 
-app.post('/api/posts', auth, (req, res) => {
-    const { title, content, category = 'Devlog' } = req.body;
-    if (!title || !content) return res.status(400).json({ error: 'Tytuł i treść są wymagane' });
-    const r = db.prepare('INSERT INTO posts(user_id,title,content,category) VALUES(?,?,?,?)').run(req.user.id, String(title).trim(), String(content).trim(), String(category).trim());
+//app.post('/api/posts', auth, (req, res) => {
+//    const { title, content, category = 'Devlog' } = req.body;
+//    if (!title || !content) return res.status(400).json({ error: 'Tytuł i treść są wymagane' });
+//    const r = db.prepare('INSERT INTO posts(user_id,title,content,category) VALUES(?,?,?,?)').run(req.user.id, String(title).trim(), String(content).trim(), String(category).trim());
+//    res.status(201).json({ id: r.lastInsertRowid });
+//});
+
+app.post('/api/posts', auth, validate(postSchema), (req, res) => {
+    const { title, content, category } = req.body;
+    const r = db.prepare('INSERT INTO posts(user_id,title,content,category) VALUES(?,?,?,?)')
+        .run(req.user.id, title, content, category);
     res.status(201).json({ id: r.lastInsertRowid });
 });
 
@@ -745,10 +778,16 @@ app.get('/api/forum/:id', optionalAuth, (req, res) => {
     res.json({ thread, replies });
 });
 
-app.post('/api/forum', auth, (req, res) => {
+//app.post('/api/forum', auth, (req, res) => {
+//    const { title, content } = req.body;
+//    if (!title || !content) return res.status(400).json({ error: 'Tytuł i treść są wymagane' });
+//    const r = db.prepare('INSERT INTO forum_threads(user_id,title,content) VALUES(?,?,?)').run(req.user.id, String(title).trim(), String(content).trim());
+//    res.status(201).json({ id: r.lastInsertRowid });
+//});
+
+app.post('/api/forum', auth, validate(forumThreadSchema), (req, res) => {
     const { title, content } = req.body;
-    if (!title || !content) return res.status(400).json({ error: 'Tytuł i treść są wymagane' });
-    const r = db.prepare('INSERT INTO forum_threads(user_id,title,content) VALUES(?,?,?)').run(req.user.id, String(title).trim(), String(content).trim());
+    const r = db.prepare('INSERT INTO forum_threads(user_id,title,content) VALUES(?,?,?)').run(req.user.id, title, content);
     res.status(201).json({ id: r.lastInsertRowid });
 });
 
@@ -860,17 +899,83 @@ process.on('uncaughtException', (err) => {
     console.error('Nieobsłużony błąd:', err);
 });
 
-function shutdown() {
-    try {
-        if (db && db.open) db.close();
-    } catch { }
-    process.exit(0);
+//function shutdown() {
+//    try {
+//        if (db && db.open) db.close();
+//    } catch { }
+//    process.exit(0);
+//}
+
+//process.on('SIGINT', shutdown);
+//process.on('SIGTERM', shutdown);
+//process.on('exit', () => {
+//    try { if (db && db.open) db.close(); } catch { }
+//});
+
+//const server = app.listen(PORT, () => console.log(`Mimcry Hunters z obsługą Twig: http://localhost:${PORT}`));
+
+//function shutdown() {
+//    console.log('Zamykanie aplikacji...');
+
+
+//    server.close(() => {
+//        try {
+
+//            if (db && db.open) {
+//                db.close();
+//            }
+//        } catch (e) {
+//            console.error('Błąd zamykania bazy:', e);
+//        } finally {
+//            process.exit(0);
+//        }
+//    });
+
+
+//    setTimeout(() => {
+//        if (db && db.open) db.close();
+//        process.exit(0);
+//    }, 2000);
+//}
+
+//process.once('SIGINT', shutdown);
+//process.once('SIGTERM', shutdown);
+//process.once('SIGUSR2', shutdown);
+
+//app.listen(PORT, () => console.log(`Mimcry Hunters z obsługą Twig: http://localhost:${PORT}`));
+
+
+const server = app.listen(PORT, () => console.log(`Mimcry Hunters z obsługą Twig: http://localhost:${PORT}`));
+
+function safeShutdown(signal) {
+    console.log(`[${signal}] Zamykanie aplikacji...`);
+    server.close(() => {
+        try {
+            if (db && db.open) {
+                db.close();
+                console.log('Połączenie SQLite zostało zamknięte.');
+            }
+        } catch (err) {
+            console.error('Błąd podczas zamykania SQLite:', err);
+        } finally {
+            process.exit(0);
+        }
+    });
+
+   
+    setTimeout(() => {
+        process.exit(1);
+    }, 1500);
 }
 
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
-process.on('exit', () => {
-    try { if (db && db.open) db.close(); } catch { }
-});
+process.once('SIGINT', () => safeShutdown('SIGINT'));
+process.once('SIGTERM', () => safeShutdown('SIGTERM'));
 
-app.listen(PORT, () => console.log(`Mimcry Hunters z obsługą Twig: http://localhost:${PORT}`));
+process.once('SIGUSR2', () => {
+    try {
+        if (db && db.open) {
+            db.close();
+        }
+    } catch (e) { }
+    process.kill(process.pid, 'SIGUSR2');
+});

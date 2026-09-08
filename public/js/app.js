@@ -11,9 +11,36 @@ async function api(url, opts = {}) {
   return d;
 }
 
+//function msg(t) {
+//  const x = document.getElementById('message') || document.getElementById('adminMessage');
+//  if (x) x.textContent = t;
+//}
+
 function msg(t) {
-  const x = document.getElementById('message') || document.getElementById('adminMessage');
-  if (x) x.textContent = t;
+    if (!t) return;
+
+    // Tworzymy kontener, jeśli jeszcze nie istnieje na stronie
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        document.body.appendChild(container);
+    }
+
+    // Tworzymy okienko powiadomienia
+    const toast = document.createElement('div');
+    toast.className = 'toast-error';
+    toast.textContent = t;
+
+    container.appendChild(toast);
+
+    // Automatyczne znikanie powiadomienia po 4 sekundach
+    setTimeout(() => {
+        toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
 }
 
 function esc(value = '') {
