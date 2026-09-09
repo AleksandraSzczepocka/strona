@@ -593,6 +593,48 @@ textarea
     }
 }
 
+/* Zarządzanie użytkownikami - Panel Admina */
+.users-table-wrapper {
+    overflow-x: auto;
+    margin-top: 1rem;
+}
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+    .users-table th {
+        text-align: left;
+        padding: 10px;
+        border-bottom: 1px solid #333;
+    }
+
+    .users-table td {
+        padding: 10px;
+        border-bottom: 1px solid #222;
+    }
+
+    .users-table .user-email {
+        opacity: 0.6;
+        font-size: 0.85em;
+    }
+
+    .users-table .btn-action {
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+
+    .users-table .btn-delete {
+        padding: 4px 8px;
+        font-size: 12px;
+        background: #c0392b;
+    }
+
+    .users-table .btn-delete:hover {
+            background: #e74c3c;
+    }
+
 
 @media(max-width:800px)
 {

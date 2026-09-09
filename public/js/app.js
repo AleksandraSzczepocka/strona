@@ -294,7 +294,80 @@ function setupGalleryEvents() {
         if (e.key === 'ArrowLeft') openLightbox(currentImageIndex - 1);
         if (e.key === 'ArrowRight') openLightbox(currentImageIndex + 1);
     });
-}
+};
+
+
+
+// Zarządzanie użytkownikami dla admina
+async function loadAdminUsers() {
+    const tbody = document.getElementById('usersList');
+    if (!tbody) return;
+
+    try {
+        const users = await api('/api/admin/users');
+        tbody.innerHTML = users.map(u => `
+      <tr style="border-bottom: 1px solid #222;">
+        <td style="padding: 10px;">${u.id}</td>
+        <td>
+          <a class="profile-link" href="/profile?u=${encodeURIComponent(u.username)}">${esc(u.username)}</a>
+          <span class="user-email">(${esc(u.email)})</span>
+        </td>
+        <td style="padding: 10px;"><span class="badge">${esc(u.role)}</span></td>
+        <td style="padding: 10px;">
+          ${u.role !== 'admin' ? `
+            <button class="btn ghost" style="padding: 4px 8px; font-size: 12px;" data-role-user="${u.id}" data-role="admin">Daj Admina</button>
+          ` : `
+            <button class="btn ghost" style="padding: 4px 8px; font-size: 12px;" data-role-user="${u.id}" data-role="user">Odbierz Admina</button>
+          `}
+          <button class="btn" style="padding: 4px 8px; font-size: 12px; background: #c0392b;" data-delete-user="${u.id}">Usuń</button>
+        </td>
+      </tr>
+    `).join('');
+
+        // Obsługa zmiany roli
+        tbody.querySelectorAll('[data-role-user]').forEach(btn => {
+            btn.onclick = async () => {
+                const userId = btn.dataset.roleUser;
+                const newRole = btn.dataset.role;
+                if (!confirm(`Czy na pewno chcesz zmienić rolę użytkownika na ${newRole}?`)) return;
+
+                try {
+                    await api(`/api/admin/users/${userId}/role`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ role: newRole })
+                    });
+                    msg('Rola została pomyślnie zmieniona.');
+                    loadAdminUsers();
+                } catch (e) {
+                    msg(e.message);
+                }
+            };
+        });
+
+        // Obsługa usuwania użytkownika
+        tbody.querySelectorAll('[data-delete-user]').forEach(btn => {
+            btn.onclick = async () => {
+                const userId = btn.dataset.deleteUser;
+                if (!confirm('Czy na pewno chcesz usunąć tego użytkownika? Operacja jest nieodwracalna.')) return;
+
+                try {
+                    await api(`/api/admin/users/${userId}`, { method: 'DELETE' });
+                    msg('Użytkownik został usunięty.');
+                    loadAdminUsers();
+                } catch (e) {
+                    msg(e.message);
+                }
+            };
+        });
+
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="4" style="padding: 10px; color: red;">${esc(e.message)}</td></tr>`;
+    }
+};
+
+
+
 
 // Inicjalizacja przy ładowaniu strony
 document.addEventListener('DOMContentLoaded', () => {
@@ -314,5 +387,5 @@ document.addEventListener('DOMContentLoaded', () => {
   if(tf) tf.addEventListener('submit',async e=>{e.preventDefault();if(!token()){location.href='/login';return}try{await api('/api/forum',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(tf)))});tf.reset();loadForum()}catch(x){msg(x.message)}});
   const pf=document.getElementById('postForm');
   if(pf) pf.addEventListener('submit',async e=>{e.preventDefault();try{await api('/api/posts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(pf)))});pf.reset();msg('Wpis został dodany.')}catch(x){msg(x.message)}});
-  loadPosts(); loadForum(); loadThread(); loadProfile(); loadStats();
+    loadPosts(); loadForum(); loadThread(); loadProfile(); loadStats(); loadAdminUsers();
 });
