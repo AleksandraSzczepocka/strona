@@ -471,11 +471,19 @@ app.get('/api/forum/:id', optionalAuth, (req, res) => {
 
     if (!thread) return res.status(404).json({ error: 'Nie znaleziono tematu' });
 
+    //const replies = db.prepare(`
+    //SELECT r.id, r.content, r.created_at, r.user_id,
+    //  COALESCE(u.username, 'Nieznany użytkownik') AS author,
+    //  (SELECT COUNT(*) FROM reply_likes rl WHERE rl.reply_id=r.id) likes,
+    //  ${req.user ? 'EXISTS(SELECT 1 FROM reply_likes me WHERE me.reply_id=r.id AND me.user_id=@viewer) AS liked' : '0 AS liked'}
+    //FROM forum_replies r LEFT JOIN users u ON u.id=r.user_id
+    //WHERE r.thread_id=@threadId ORDER BY r.created_at ASC`).all(req.user ? { viewer: req.user.id, threadId: req.params.id } : { threadId: req.params.id });
+
     const replies = db.prepare(`
     SELECT r.id, r.content, r.created_at, r.user_id,
-      COALESCE(u.username, 'Nieznany użytkownik') AS author,
-      (SELECT COUNT(*) FROM reply_likes rl WHERE rl.reply_id=r.id) likes,
-      ${req.user ? 'EXISTS(SELECT 1 FROM reply_likes me WHERE me.reply_id=r.id AND me.user_id=@viewer) AS liked' : '0 AS liked'}
+    COALESCE(u.username, 'Nieznany użytkownik') AS author, u.avatar_url AS avatar,
+    (SELECT COUNT(*) FROM reply_likes rl WHERE rl.reply_id=r.id) likes,
+  ${req.user ? 'EXISTS(SELECT 1 FROM reply_likes me WHERE me.reply_id=r.id AND me.user_id=@viewer) AS liked' : '0 AS liked'}
     FROM forum_replies r LEFT JOIN users u ON u.id=r.user_id 
     WHERE r.thread_id=@threadId ORDER BY r.created_at ASC`).all(req.user ? { viewer: req.user.id, threadId: req.params.id } : { threadId: req.params.id });
 

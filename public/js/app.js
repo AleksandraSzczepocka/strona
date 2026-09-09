@@ -47,9 +47,20 @@ function esc(value = '') {
   return String(value).replace(/[&<>'"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[c]));
 }
 
+//function avatar(user, size = '') {
+//  if (user?.avatar_url) return `<img class="avatar ${size}" src="${esc(user.avatar_url)}" alt="Profilówka ${esc(user.username)}">`;
+//  return `<div class="avatar avatar-placeholder ${size}">${esc((user?.username || '?').slice(0,1).toUpperCase())}</div>`;
+//}
+
 function avatar(user, size = '') {
-  if (user?.avatar_url) return `<img class="avatar ${size}" src="${esc(user.avatar_url)}" alt="Profilówka ${esc(user.username)}">`;
-  return `<div class="avatar avatar-placeholder ${size}">${esc((user?.username || '?').slice(0,1).toUpperCase())}</div>`;
+    const imgUrl = user?.avatar_url || user?.avatar;
+    const name = user?.username || user?.author || '?';
+
+    if (imgUrl) {
+        return `<img class="avatar ${size}" src="${esc(imgUrl)}" alt="Profilówka ${esc(name)}">`;
+    }
+
+    return `<div class="avatar avatar-placeholder ${size}">${esc(name.slice(0, 1).toUpperCase())}</div>`;
 }
 
 async function loadCurrentUser() {
@@ -174,7 +185,7 @@ async function loadThread() {
   try {
     const data = await api('/api/forum/' + id);
     el.innerHTML = `<article class="thread-full"><div class="eyebrow">TEMAT FORUM</div><h2>${esc(data.thread.title)}</h2><p>${esc(data.thread.content)}</p><small>Autor: <a class="profile-link" href="/profile?u=${encodeURIComponent(data.thread.author)}">${esc(data.thread.author)}</a></small></article>
-      <div class="replies"><h2>ODPOWIEDZI (${data.replies.length})</h2>${data.replies.map(r => `<article class="reply"><div class="reply-head">${avatar(r)}<div><a class="profile-link" href="/profile?u=${encodeURIComponent(r.author)}">${esc(r.author)}</a><small>${new Date(r.created_at).toLocaleString('pl-PL')}</small></div></div><p>${esc(r.content)}</p><button class="like-btn ${r.liked ? 'liked' : ''}" data-like-reply="${r.id}">♥ <span>${r.likes || 0}</span></button></article>`).join('')}</div>
+      <div class="replies"><h2>ODPOWIEDZI (${data.replies.length})</h2>${data.replies.map(r => `<article class="reply"><div class="reply-head">${avatar({ avatar_url: r.avatar, username: r.author })}<div><a class="profile-link" href="/profile?u=${encodeURIComponent(r.author)}">${esc(r.author)}</a><small>${new Date(r.created_at).toLocaleString('pl-PL')}</small></div></div><p>${esc(r.content)}</p><button class="like-btn ${r.liked ? 'liked' : ''}" data-like-reply="${r.id}">♥ <span>${r.likes || 0}</span></button></article>`).join('')}</div>
       <div class="new-thread"><h2>ODPOWIEDZ</h2><form id="replyForm"><textarea name="content" placeholder="Napisz odpowiedź..." required></textarea><button class="btn">Odpowiedz</button></form></div>`;
     el.querySelectorAll('[data-like-reply]').forEach(b => b.onclick = async () => {
       if (!token()) { location.href = '/login'; return; }
@@ -454,6 +465,13 @@ function setupPasswordToggles() {
 
 
 document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('click', (e) => {
+        const logoutBtn = e.target.closest('#logout');
+        if (logoutBtn) {
+            e.preventDefault();
+            logout();
+        }
+   });
   loadCurrentUser();
   const lf=document.getElementById('loginForm');
   if(lf) lf.addEventListener('submit',async e=>{e.preventDefault();try{const d=await api('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(lf)))});localStorage.setItem('mh_token',d.token);location.href=d.user.role==='admin'?'/admin':'/profile'}catch(x){msg(x.message)}});

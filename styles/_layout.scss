@@ -129,6 +129,35 @@
     }
 }
 
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 1px;
+    background: var(--line);
+    margin-top: 45px
+}
+
+.cards article {
+    background: #0d0f0d;
+    padding: 35px
+}
+
+.cards i {
+    color: var(--red);
+    font: 12px monospace
+}
+
+.cards h3 {
+    font-size: 22px
+}
+
+.cards p {
+    color: var(--muted);
+    font-size: 13px
+}
+
+
 .dark {
     background: #0c0d0c;
     border-top: 1px solid var(--line)
@@ -150,6 +179,57 @@ footer {
     color: #646964;
     font-size: 10px
 }
+
+.quote {
+    font-size: 28px;
+    font-weight: bold;
+    border-left: 2px solid var(--red);
+    padding-left: 25px
+}
+
+.quote span {
+    color: var(--red)
+}
+
+.shot {
+    height: 260px;
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: end;
+    padding: 16px;
+    font: 10px monospace;
+    background-size: cover
+}
+
+.s1 {
+    background: linear-gradient(135deg,#20251f,#080909 65%,#4b100f)
+}
+
+.s2 {
+    background: radial-gradient(circle,#55131c,#171416 45%,#070808)
+}
+
+.s3 {
+    background: linear-gradient(90deg,#151916,#444b45,#090a09)
+}
+
+.s4 {
+    background: linear-gradient(130deg,#292c28,#0c0d0d)
+}
+
+.s5 {
+    background: radial-gradient(circle,#b8ff00,#1a2410 7%,#090a09 55%)
+}
+
+.s6 {
+    background: linear-gradient(45deg,#351016,#101211 55%,#59605b)
+}
+
+textarea {
+    min-height: 130px;
+    resize: vertical
+}
+
 
 @media(max-width: 800px) {
     header {
