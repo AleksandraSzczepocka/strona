@@ -636,6 +636,41 @@ textarea
     }
 
 
+
+/* Wątki ukryte/zdezaktywowane */
+.thread.disabled-post {
+    opacity: 0.5;
+    border: 1px dashed #e74c3c;
+}
+
+.badge-hidden {
+    color: #e74c3c;
+    font-size: 0.8em;
+}
+
+/* Przyciski panelu akcji administratora */
+.admin-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+}
+
+.btn-admin {
+    padding: 2px 6px;
+    font-size: 10px;
+}
+
+.btn-admin-danger {
+    padding: 2px 6px;
+    font-size: 10px;
+    background-color: #c0392b;
+    color: #fff;
+}
+
+.btn-admin-danger:hover {
+    background-color: #e74c3c;
+}
+
 @media(max-width:800px)
 {
     header

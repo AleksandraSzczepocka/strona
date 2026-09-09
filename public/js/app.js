@@ -102,15 +102,68 @@ async function loadPosts() {
   } catch (e) { el.textContent = e.message; }
 }
 
+//async function loadForum() {
+//  const el = document.getElementById('threads');
+//  if (!el) return;
+//  try {
+//    const ts = await api('/api/forum');
+//    el.innerHTML = ts.length ? ts.map(t => `<article class="thread">
+//      <div><h3><a href="/forum?thread=${t.id}">${esc(t.title)}</a></h3><p>${esc(t.content)}</p><small><a class="profile-link" href="/profile?u=${encodeURIComponent(t.author)}">${esc(t.author)}</a> · ${t.replies} odpowiedzi</small></div><b>${t.replies}</b>
+//    </article>`).join('') : '<div class="thread">Brak tematów — rozpocznij dyskusję.</div>';
+//  } catch (e) { el.textContent = e.message; }
+//}
+
 async function loadForum() {
-  const el = document.getElementById('threads');
-  if (!el) return;
-  try {
-    const ts = await api('/api/forum');
-    el.innerHTML = ts.length ? ts.map(t => `<article class="thread">
-      <div><h3><a href="/forum?thread=${t.id}">${esc(t.title)}</a></h3><p>${esc(t.content)}</p><small><a class="profile-link" href="/profile?u=${encodeURIComponent(t.author)}">${esc(t.author)}</a> · ${t.replies} odpowiedzi</small></div><b>${t.replies}</b>
-    </article>`).join('') : '<div class="thread">Brak tematów — rozpocznij dyskusję.</div>';
-  } catch (e) { el.textContent = e.message; }
+    const el = document.getElementById('threads');
+    if (!el) return;
+    try {
+        const ts = await api('/api/forum');
+        const currentUser = token() ? await api('/api/me').catch(() => null) : null;
+        const isAdmin = currentUser?.role === 'admin';
+
+        el.innerHTML = ts.length ? ts.map(t => `
+      <article class="thread ${t.is_active === 0 ? 'disabled-post' : ''}">
+        <div>
+          <h3>
+            <a href="/forum?thread=${t.id}">${esc(t.title)}</a> 
+            ${t.is_active === 0 ? '<small class="badge-hidden">(Ukryty)</small>' : ''}
+          </h3>
+          <p>${esc(t.content)}</p>
+          <small><a class="profile-link" href="/profile?u=${encodeURIComponent(t.author)}">${esc(t.author)}</a> · ${t.replies} odpowiedzi</small>
+          
+          ${isAdmin ? `
+            <div class="admin-actions">
+              <button class="btn ghost btn-admin" data-toggle-thread="${t.id}">
+                ${t.is_active === 1 ? 'Ukryj' : 'Aktywuj'}
+              </button>
+              <button class="btn btn-admin-danger" data-delete-thread="${t.id}">
+                Usuń
+              </button>
+            </div>
+          ` : ''}
+        </div>
+        <b>${t.replies}</b>
+      </article>`).join('') : '<div class="thread">Brak tematów — rozpocznij dyskusję.</div>';
+
+        if (isAdmin) {
+            
+            el.querySelectorAll('[data-toggle-thread]').forEach(btn => {
+                btn.onclick = async () => {
+                    await api(`/api/admin/forum/threads/${btn.dataset.toggleThread}/toggle`, { method: 'PATCH' });
+                    loadForum();
+                };
+            });
+            
+            el.querySelectorAll('[data-delete-thread]').forEach(btn => {
+                btn.onclick = async () => {
+                    if (!confirm('Usunąć ten wątek wraz z odpowiedziami?')) return;
+                    await api(`/api/admin/forum/threads/${btn.dataset.deleteThread}`, { method: 'DELETE' });
+                    loadForum();
+                };
+            });
+        }
+
+    } catch (e) { el.textContent = e.message; }
 }
 
 async function loadThread() {

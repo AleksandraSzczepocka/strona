@@ -100,7 +100,12 @@ CREATE TABLE IF NOT EXISTS gallery_images (
 );
 `);
 
+// Migracja statusu w forum
+const threadColumns = db.prepare('PRAGMA table_info(forum_threads)').all().map(c => c.name);
+if (!threadColumns.includes('is_active')) db.exec("ALTER TABLE forum_threads ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1");
 
+const replyColumns = db.prepare('PRAGMA table_info(forum_replies)').all().map(c => c.name);
+if (!replyColumns.includes('is_active')) db.exec("ALTER TABLE forum_replies ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1");
 
 // Migracja bazy
 const userColumns = db.prepare('PRAGMA table_info(users)').all().map(c => c.name);
@@ -435,12 +440,26 @@ app.delete('/api/posts/:id', auth, admin, (req, res) => {
 //    res.json(threads);
 //});
 
-app.get('/api/forum', (req, res) => {
+//app.get('/api/forum', (req, res) => {
+//    const threads = db.prepare(`
+//    SELECT t.id, t.title, t.content, t.created_at,
+//      COALESCE(u.username, 'Nieznany użytkownik') AS author,
+//      (SELECT COUNT(*) FROM forum_replies r WHERE r.thread_id=t.id) replies
+//    FROM forum_threads t LEFT JOIN users u ON u.id=t.user_id ORDER BY t.created_at DESC`).all();
+//    res.json(threads);
+//});
+
+app.get('/api/forum', optionalAuth, (req, res) => {
+    const isAdmin = req.user && req.user.role === 'admin';
+    const whereClause = isAdmin ? '' : 'WHERE t.is_active = 1';
+
     const threads = db.prepare(`
-    SELECT t.id, t.title, t.content, t.created_at, 
+    SELECT t.id, t.title, t.content, t.is_active, t.created_at, 
       COALESCE(u.username, 'Nieznany użytkownik') AS author,
-      (SELECT COUNT(*) FROM forum_replies r WHERE r.thread_id=t.id) replies
-    FROM forum_threads t LEFT JOIN users u ON u.id=t.user_id ORDER BY t.created_at DESC`).all();
+      (SELECT COUNT(*) FROM forum_replies r WHERE r.thread_id=t.id ${isAdmin ? '' : 'AND r.is_active = 1'}) replies
+    FROM forum_threads t LEFT JOIN users u ON u.id=t.user_id 
+    ${whereClause}
+    ORDER BY t.created_at DESC`).all();
     res.json(threads);
 });
 
@@ -461,6 +480,27 @@ app.get('/api/forum/:id', optionalAuth, (req, res) => {
     WHERE r.thread_id=@threadId ORDER BY r.created_at ASC`).all(req.user ? { viewer: req.user.id, threadId: req.params.id } : { threadId: req.params.id });
 
     res.json({ thread, replies });
+});
+
+
+app.patch('/api/admin/forum/threads/:id/toggle', auth, admin, (req, res) => {
+    db.prepare('UPDATE forum_threads SET is_active = CASE WHEN is_active = 1 THEN 0 ELSE 1 END WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+});
+
+app.delete('/api/admin/forum/threads/:id', auth, admin, (req, res) => {
+    db.prepare('DELETE FROM forum_threads WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+});
+
+app.patch('/api/admin/forum/replies/:id/toggle', auth, admin, (req, res) => {
+    db.prepare('UPDATE forum_replies SET is_active = CASE WHEN is_active = 1 THEN 0 ELSE 1 END WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+});
+
+app.delete('/api/admin/forum/replies/:id', auth, admin, (req, res) => {
+    db.prepare('DELETE FROM forum_replies WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
 });
 
 //app.get('/api/forum/:id', optionalAuth, (req, res) => {
