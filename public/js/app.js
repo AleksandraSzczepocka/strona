@@ -19,7 +19,7 @@ async function api(url, opts = {}) {
 function msg(t) {
     if (!t) return;
 
-    // Tworzymy kontener, jeśli jeszcze nie istnieje na stronie
+ 
     let container = document.getElementById('toast-container');
     if (!container) {
         container = document.createElement('div');
@@ -27,14 +27,14 @@ function msg(t) {
         document.body.appendChild(container);
     }
 
-    // Tworzymy okienko powiadomienia
+
     const toast = document.createElement('div');
     toast.className = 'toast-error';
     toast.textContent = t;
 
     container.appendChild(toast);
 
-    // Automatyczne znikanie powiadomienia po 4 sekundach
+
     setTimeout(() => {
         toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
         toast.style.opacity = '0';
@@ -430,6 +430,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+// Funkcja obsługująca kliknięcie w oko
+function setupPasswordToggles() {
+    document.querySelectorAll('.btn-toggle-password').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const wrapper = btn.closest('.password-wrapper');
+            const input = wrapper ? wrapper.querySelector('input') : null;
+            if (!input) return;
+
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+
+            const icon = btn.querySelector('[data-lucide]');
+            if (icon) {
+                icon.setAttribute('data-lucide', isPassword ? 'eye-off' : 'eye');
+                lucide.createIcons();
+            }
+        });
+    });
+}
+
+
+
+
 document.addEventListener('DOMContentLoaded', () => {
   loadCurrentUser();
   const lf=document.getElementById('loginForm');
@@ -440,5 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if(tf) tf.addEventListener('submit',async e=>{e.preventDefault();if(!token()){location.href='/login';return}try{await api('/api/forum',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(tf)))});tf.reset();loadForum()}catch(x){msg(x.message)}});
   const pf=document.getElementById('postForm');
   if(pf) pf.addEventListener('submit',async e=>{e.preventDefault();try{await api('/api/posts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(pf)))});pf.reset();msg('Wpis został dodany.')}catch(x){msg(x.message)}});
-    loadPosts(); loadForum(); loadThread(); loadProfile(); loadStats(); loadAdminUsers();
+    loadPosts(); loadForum(); loadThread(); loadProfile(); loadStats(); loadAdminUsers(); if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    } setupPasswordToggles();
 });

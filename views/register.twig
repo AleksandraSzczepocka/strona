@@ -13,7 +13,12 @@
     <form id="registerForm">
         <input name="username" placeholder="Nazwa użytkownika" required minlength="3">
         <input name="email" type="email" placeholder="E-mail" required>
-        <input name="password" type="password" placeholder="Hasło — min. 8 znaków" required minlength="8">
+        <div class="password-wrapper">
+            <input name="password" type="password" placeholder="Hasło — min. 8 znaków" required minlength="8">
+            <button type="button" class="btn-toggle-password" aria-label="Pokaż/Ukryj hasło">
+                <i data-lucide="eye"></i>
+            </button>
+        </div>
         <label><input type="checkbox" required> Akceptuję regulamin</label>
         <button class="btn">Utwórz konto</button>
     </form>
