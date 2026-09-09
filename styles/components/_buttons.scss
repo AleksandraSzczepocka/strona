@@ -1,0 +1,53 @@
+﻿.actions {
+    display: flex;
+    gap: 9px;
+    align-items: center
+}
+
+.btn {
+    display: inline-block;
+    border: 1px solid var(--green);
+    background: var(--green);
+    color: #080a05;
+    padding: 12px 18px;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    cursor: pointer;
+
+    &:hover {
+        filter: brightness(1.1);
+    }
+
+    &.ghost {
+        background: transparent;
+        color: var(--white);
+        border-color: var(--line);
+    }
+}
+
+.badge {
+    font: 10px monospace;
+    color: var(--green);
+    border: 1px solid #34470d;
+    padding: 5px 8px;
+
+    &.badge-hidden {
+        color: #e74c3c;
+        font-size: 0.8em;
+    }
+}
+
+.like-btn {
+    border: 1px solid var(--line);
+    background: transparent;
+    color: #888;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-weight: bold;
+
+    &:hover, &.liked {
+        border-color: var(--red);
+        color: var(--red);
+    }
+}

@@ -1,0 +1,75 @@
+﻿.admin-panel {
+    margin-top: 35px;
+    padding: 30px;
+    border: 1px solid var(--line);
+    background: #0d0f0d;
+
+    form {
+        display: grid;
+        gap: 12px;
+    }
+}
+
+.users-table-wrapper {
+    overflow-x: auto;
+    margin-top: 1rem;
+}
+
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th {
+        text-align: left;
+        padding: 10px;
+        border-bottom: 1px solid #333;
+    }
+
+    td {
+        padding: 10px;
+        border-bottom: 1px solid #222;
+    }
+
+    .user-email {
+        opacity: 0.6;
+        font-size: 0.85em;
+    }
+
+    .btn-action {
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+
+    .btn-delete {
+        padding: 4px 8px;
+        font-size: 12px;
+        background: #c0392b;
+
+        &:hover {
+            background: #e74c3c;
+        }
+    }
+}
+
+.admin-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+}
+
+.btn-admin {
+    padding: 2px 6px;
+    font-size: 10px;
+}
+
+.btn-admin-danger {
+    padding: 2px 6px;
+    font-size: 10px;
+    background-color: #c0392b;
+    color: #fff;
+
+    &:hover {
+        background-color: #e74c3c;
+    }
+}

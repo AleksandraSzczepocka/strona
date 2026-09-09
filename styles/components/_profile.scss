@@ -1,0 +1,157 @@
+﻿.user-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase
+}
+
+.chip-avatar .avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 10px
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--line);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #111;
+    color: var(--green);
+    font-weight: 900
+}
+
+.avatar-placeholder {
+    font-family: monospace
+}
+
+.avatar-xl {
+    width: 130px;
+    height: 130px;
+    font-size: 42px;
+    border: 2px solid var(--green);
+
+    @media(max-width: 800px) {
+        width: 100px;
+        height: 100px;
+        font-size: 30px;
+    }
+}
+
+.profile-head {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 30px;
+    align-items: center;
+    padding: 35px;
+    border: 1px solid var(--line);
+    background: #0d0f0d;
+
+    h1 {
+        margin: 8px 0;
+        font-size: 58px;
+        letter-spacing: -4px;
+    }
+
+    @media(max-width: 800px) {
+        grid-template-columns: 1fr;
+
+        h1 {
+            font-size: 44px;
+        }
+    }
+}
+
+.profile-bio {
+    color: var(--muted);
+    max-width: 720px;
+    line-height: 1.6
+}
+
+.profile-meta {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    color: #686e68;
+    font: 11px monospace;
+    margin-top: 18px
+}
+
+.profile-edit {
+    margin-top: 15px;
+    padding: 30px;
+    border: 1px solid var(--line);
+    background: #0d0f0d;
+
+    form {
+        display: grid;
+        gap: 12px;
+    }
+}
+
+.avatar-form {
+    margin-top: 12px !important;
+    padding-top: 15px;
+    border-top: 1px solid var(--line);
+
+    label {
+        display: grid;
+        gap: 7px;
+        color: var(--muted);
+        font: 10px monospace;
+        letter-spacing: 1px;
+    }
+}
+
+.profile-section {
+    margin-top: 55px
+}
+
+.section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 15px;
+
+    h2 {
+        margin: 7px 0 0;
+        font-size: 31px;
+    }
+}
+
+.count {
+    font: 22px monospace;
+    color: var(--red)
+}
+
+.profile-item {
+    border-bottom: 1px solid var(--line);
+    padding: 25px 0;
+
+    h3 {
+        margin: 7px 0;
+    }
+
+    p {
+        color: var(--muted);
+        line-height: 1.6;
+        max-width: 800px;
+    }
+
+    small {
+        color: #666b66;
+    }
+}
+
+.empty {
+    border: 1px dashed var(--line);
+    padding: 25px;
+    color: var(--muted)
+}
