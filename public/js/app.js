@@ -4,17 +4,14 @@ async function api(url, opts = {}) {
   opts.headers = {
     ...(opts.headers || {}),
     ...(token() ? { Authorization: 'Bearer ' + token() } : {})
-  };
+    };
+
+    
   const r = await fetch(url, opts);
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(d.error || 'Błąd');
   return d;
 }
-
-//function msg(t) {
-//  const x = document.getElementById('message') || document.getElementById('adminMessage');
-//  if (x) x.textContent = t;
-//}
 
 function msg(t) {
     if (!t) return;
@@ -47,11 +44,6 @@ function esc(value = '') {
   return String(value).replace(/[&<>'"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[c]));
 }
 
-//function avatar(user, size = '') {
-//  if (user?.avatar_url) return `<img class="avatar ${size}" src="${esc(user.avatar_url)}" alt="Profilówka ${esc(user.username)}">`;
-//  return `<div class="avatar avatar-placeholder ${size}">${esc((user?.username || '?').slice(0,1).toUpperCase())}</div>`;
-//}
-
 function avatar(user, size = '') {
     const imgUrl = user?.avatar_url || user?.avatar;
     const name = user?.username || user?.author || '?';
@@ -80,49 +72,110 @@ async function loadCurrentUser() {
   }
 }
 
-//function logout() {
-//    localStorage.removeItem('mh_token');
-//    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-//  location.href = '/';
-//}
-
 function logout() {
     localStorage.removeItem('mh_token');
     window.location.href = '/logout';
 };
 
-
 async function loadPosts() {
-  const el = document.getElementById('posts');
-  if (!el) return;
-  try {
-    const posts = await api('/api/posts');
-    el.innerHTML = posts.map((p, i) => `<article class="devpost">
-      <div class="num">${String(i + 1).padStart(2, '0')}</div>
-      <div><div class="eyebrow">${esc(p.category)} · ${new Date(p.created_at).toLocaleDateString('pl-PL')}</div>
-      <h2>${esc(p.title)}</h2><p>${esc(p.content)}</p>
-      <small>Autor: <a class="profile-link" href="/profile?u=${encodeURIComponent(p.author)}">${esc(p.author)}</a></small>
-      <div class="like-row"><button class="like-btn ${p.liked ? 'liked' : ''}" data-like-post="${p.id}">♥ <span>${p.likes || 0}</span></button></div></div></article>`).join('');
-    el.querySelectorAll('[data-like-post]').forEach(b => b.onclick = async () => {
-      if (!token()) { location.href = '/login'; return; }
-      try {
-        const d = await api('/api/posts/' + b.dataset.likePost + '/like', { method: 'POST' });
-        b.classList.toggle('liked', d.liked); b.querySelector('span').textContent = d.likes;
-      } catch (e) { msg(e.message); }
-    });
-  } catch (e) { el.textContent = e.message; }
-}
+    const el = document.getElementById('posts');
+    if (!el) return;
+    try {
+        const posts = await api('/api/posts');
+        const currentUser = token() ? await api('/api/me').catch(() => null) : null;
+        const isAdmin = currentUser?.role === 'admin';
 
-//async function loadForum() {
-//  const el = document.getElementById('threads');
-//  if (!el) return;
-//  try {
-//    const ts = await api('/api/forum');
-//    el.innerHTML = ts.length ? ts.map(t => `<article class="thread">
-//      <div><h3><a href="/forum?thread=${t.id}">${esc(t.title)}</a></h3><p>${esc(t.content)}</p><small><a class="profile-link" href="/profile?u=${encodeURIComponent(t.author)}">${esc(t.author)}</a> · ${t.replies} odpowiedzi</small></div><b>${t.replies}</b>
-//    </article>`).join('') : '<div class="thread">Brak tematów — rozpocznij dyskusję.</div>';
-//  } catch (e) { el.textContent = e.message; }
-//}
+        const html = posts.map((p) => {
+            let mediaHtml = '';
+
+            if (p.media_url) {
+                const url = p.media_url.trim();
+                const lowerUrl = url.toLowerCase();
+                const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+
+                if (ytMatch && ytMatch[1]) {
+                    const videoId = ytMatch[1];
+                    mediaHtml = `
+            <div class="post-media video-container">
+              <iframe src="https://www.youtube.com/embed/${videoId}" 
+                      frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowfullscreen></iframe>
+            </div>`;
+                }
+                else if (lowerUrl.match(/\.(mp4|webm|ogg)$/)) {
+                    mediaHtml = `
+            <div class="post-media">
+              <video controls>
+                <source src="${esc(url)}">
+                Twoja przeglądarka nie wspiera odtwarzacza wideo.
+              </video>
+            </div>`;
+                }
+                else if (lowerUrl.match(/\.(mp3|wav|ogg)$/)) {
+                    mediaHtml = `
+            <div class="post-media">
+              <audio controls>
+                <source src="${esc(url)}">
+              </audio>
+            </div>`;
+                }
+                else if (lowerUrl.match(/\.(zip|rar|7z|tar|gz)$/)) {
+                    mediaHtml = `
+            <div class="post-media file-attachment">
+              <a href="${esc(url)}" class="btn ghost" download>Pobierz załącznik (${esc(url.split('/').pop())})</a>
+            </div>`;
+                }
+                else if (lowerUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/)) {
+                    mediaHtml = `
+            <div class="post-media">
+              <img src="${esc(url)}" alt="Załącznik posta">
+            </div>`;
+                }
+                else {
+                    mediaHtml = `
+            <div class="post-media">
+              <a href="${esc(url)}" target="_blank" rel="noopener noreferrer">🔗 Zobacz załącznik / odnośnik</a>
+            </div>`;
+                }
+            }
+
+            return `
+        <article class="post-card" data-id="${p.id}">
+          <div class="post-header">
+            <span class="post-category">${esc(p.category)}</span>
+            <span class="post-date">${new Date(p.created_at).toLocaleDateString('pl-PL')}</span>
+          </div>
+          <h2>${esc(p.title)}</h2>
+          <div class="post-content">${esc(p.content)}</div>
+          ${mediaHtml}
+          <div class="post-footer">
+            <span class="post-author">Autor: <strong>${esc(p.author || 'Admin')}</strong></span>
+            ${isAdmin ? `<button class="btn danger" data-delete-post="${p.id}">Usuń</button>` : ''}
+          </div>
+        </article>
+      `;
+        }).join('');
+
+        el.innerHTML = html;
+
+        if (isAdmin) {
+            el.querySelectorAll('[data-delete-post]').forEach(btn => {
+                btn.onclick = async () => {
+                    if (!confirm('Czy na pewno chcesz usunąć ten post?')) return;
+                    try {
+                        await api(`/api/posts/${btn.dataset.deletePost}`, { method: 'DELETE' });
+                        msg('Post został usunięty.');
+                        loadPosts();
+                    } catch (err) {
+                        msg(err.message);
+                    }
+                };
+            });
+        }
+    } catch (err) {
+        el.innerHTML = '<p class="error">Nie udało się wczytać wpisów.</p>';
+    }
+}
 
 async function loadForum() {
     const el = document.getElementById('threads');
@@ -479,8 +532,31 @@ document.addEventListener('DOMContentLoaded', () => {
   if(rf) rf.addEventListener('submit',async e=>{e.preventDefault();try{await api('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(rf)))});location.href='/login'}catch(x){msg(x.message)}});
   const tf=document.getElementById('threadForm');
   if(tf) tf.addEventListener('submit',async e=>{e.preventDefault();if(!token()){location.href='/login';return}try{await api('/api/forum',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(tf)))});tf.reset();loadForum()}catch(x){msg(x.message)}});
-  const pf=document.getElementById('postForm');
-  if(pf) pf.addEventListener('submit',async e=>{e.preventDefault();try{await api('/api/posts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(pf)))});pf.reset();msg('Wpis został dodany.')}catch(x){msg(x.message)}});
+  //const pf=document.getElementById('postForm');
+    //if(pf) pf.addEventListener('submit',async e=>{e.preventDefault();try{await api('/api/posts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(pf)))});pf.reset();msg('Wpis został dodany.')}catch(x){msg(x.message)}});
+
+
+    const pf = document.getElementById('postForm');
+    if (pf) {
+        pf.addEventListener('submit', async e => {
+            e.preventDefault();
+            try {
+                const formData = new FormData(pf);
+
+              
+                await api('/api/posts', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                pf.reset();
+                msg('Wpis został dodany.');
+                loadPosts();
+            } catch (x) {
+                msg(x.message);
+            }
+        });
+    }
     loadPosts(); loadForum(); loadThread(); loadProfile(); loadStats(); loadAdminUsers(); if (typeof lucide !== 'undefined') {
         lucide.createIcons();
     } setupPasswordToggles();

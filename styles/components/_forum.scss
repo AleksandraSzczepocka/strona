@@ -106,6 +106,7 @@
     margin-top: 45px;
 }
 
+
 .devpost {
     border-top: 1px solid var(--line);
     padding: 32px 0;
@@ -129,5 +130,138 @@
 
     @media(max-width: 800px) {
         grid-template-columns: 45px 1fr;
+    }
+}
+
+.like-row {
+    display: flex;
+    align-items: center;
+
+    .btn-admin-danger {
+        margin-left: 10px;
+        padding: 4px 10px;
+        font-size: 12px;
+        background: #c0392b;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+
+        &:hover {
+            background: #c0392b;
+        }
+    }
+}
+
+
+.video-container {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+}
+
+.video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+#posts {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+}
+
+.post-card {
+    background: #0d0f0d;
+    border: 1px solid var(--line);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+
+    .post-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: var(--muted);
+        font-size: 13px;
+
+        .post-category {
+            color: var(--red);
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+    }
+
+    h2 {
+        margin: 0;
+        font-size: 24px;
+        color: #fff;
+    }
+
+    .post-content {
+        color: var(--muted);
+        line-height: 1.6;
+        word-break: break-word;
+    }
+
+    .post-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 10px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+
+        .btn.danger {
+            background: #e74c3c;
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-weight: bold;
+
+            &:hover {
+                background: #c0392b;
+            }
+        }
+    }
+
+    .post-media {
+        width: 100%;
+        margin: 12px 0;
+        overflow: hidden;
+        border-radius: 4px;
+
+        img, video {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
+        }
+
+        &.video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+
+            iframe {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+            }
+        }
     }
 }

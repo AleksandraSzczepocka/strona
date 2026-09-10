@@ -22,13 +22,29 @@
     <div class="eyebrow">ZARZĄDZANIE</div>
     <h1>DASHBOARD</h1>
     <div id="stats" class="stats"></div>
-    <div class="admin-panel">
+    <!--<div class="admin-panel">
         <h2>DODAJ DEVLOG</h2>
         <form id="postForm">
             <input name="title" placeholder="Tytuł" required>
             <input name="category" placeholder="Kategoria" value="Devlog">
             <textarea name="content" placeholder="Treść" required></textarea>
             <button class="btn">Dodaj</button>
+        </form>
+    </div>-->
+
+    <div class="admin-panel">
+        <h2>DODAJ DEVLOG</h2>
+        <form id="postForm" enctype="multipart/form-data">
+            <input name="title" placeholder="Tytuł wpisu" required>
+            <input name="category" placeholder="Kategoria" value="Devlog">
+
+            <label>Wgraj plik (obraz, MP4, GIF, MP3, ZIP):</label>
+            <input type="file" name="media_file" accept="image/*,video/*,audio/*,.zip,.rar,.7z">
+
+            <input name="media_url" placeholder="Lub wklej link (np. https://www.youtube.com/watch?v=...)">
+
+            <textarea name="content" placeholder="Treść wpisu..." required></textarea>
+            <button class="btn" type="submit">Opublikuj wpis</button>
         </form>
     </div>
 

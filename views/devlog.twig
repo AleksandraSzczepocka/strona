@@ -1,10 +1,29 @@
-{% extends 'layout.twig' %}
+﻿{% extends 'layout.twig' %}
 {% block title %}MIMICRY EXPERIMENTS - Devlog{% endblock %}
 
 {% block content %}
-    <main class="page">
-        <div class="eyebrow">DZIENNIK PRODUKCJI</div>
-        <h1>DEVLOG</h1>
-        <div id="posts" class="devlog"></div>
-    </main>
+<main class="page">
+    <div class="eyebrow">DZIENNIK PRODUKCJI</div>
+    <h1>DEVLOG</h1>
+
+    <div id="posts" class="devlog"></div>
+
+    {% if user and user.role == 'admin' %}
+    <section class="admin-panel" style="margin-bottom: 2rem;">
+        <h2>DODAJ NOWY WPIS</h2>
+        <form id="postForm" enctype="multipart/form-data">
+            <input name="title" placeholder="Tytuł wpisu" required>
+            <input name="category" placeholder="Kategoria" value="Devlog">
+
+            <label>Wgraj plik (obraz, MP4, GIF, MP3, ZIP):</label>
+            <input type="file" placeholder=""name="media_file" accept="image/*,video/*,audio/*,.zip,.rar,.7z">
+
+            <input name="media_url" placeholder="Lub wklej link (np. https://www.youtube.com/watch?v=...)">
+
+            <textarea name="content" placeholder="Treść wpisu..." required></textarea>
+            <button class="btn" type="submit">Opublikuj wpis</button>
+        </form>
+    </section>
+    {% endif %}
+</main>
 {% endblock %}

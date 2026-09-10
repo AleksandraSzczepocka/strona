@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS posts (
   title TEXT NOT NULL,
   content TEXT NOT NULL,
   category TEXT NOT NULL DEFAULT 'Devlog',
+  media_url TEXT,
   published INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
@@ -106,6 +107,7 @@ if (!threadColumns.includes('is_active')) db.exec("ALTER TABLE forum_threads ADD
 
 const replyColumns = db.prepare('PRAGMA table_info(forum_replies)').all().map(c => c.name);
 if (!replyColumns.includes('is_active')) db.exec("ALTER TABLE forum_replies ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1");
+
 
 // Migracja bazy
 const userColumns = db.prepare('PRAGMA table_info(users)').all().map(c => c.name);
@@ -202,12 +204,10 @@ function publicUser(user) {
     };
 }
 
-// Renderowanie Widoków
 app.get('/', (req, res) => res.render('index.twig', { activePage: 'index' }));
 app.get('/gallery', (req, res) => {
     res.render('gallery.twig', { activePage: 'gallery' });
 });
-    //res.render('gallery.twig', { activePage: 'gallery' }));
 
 app.get('/devlog', (req, res) => res.render('devlog.twig', { activePage: 'devlog' }));
 app.get('/forum', (req, res) => res.render('forum.twig', { activePage: 'forum' }));
@@ -229,23 +229,6 @@ app.get('/logout', (req, res) => {
     res.clearCookie('token');
     res.redirect('/');
 });
-
-
-// REST API
-//app.post('/api/auth/register', (req, res) => {
-//    const username = String(req.body.username || '').trim();
-//    const email = String(req.body.email || '').trim().toLowerCase();
-//    const password = String(req.body.password || '');
-//    if (!username || !email || !password || password.length < 8)
-//        return res.status(400).json({ error: 'Podaj nazwę, poprawny e-mail i hasło min. 8 znaków' });
-//    try {
-//        const hash = bcrypt.hashSync(password, 10);
-//        const result = db.prepare('INSERT INTO users(username,email,password_hash) VALUES(?,?,?)').run(username, email, hash);
-//        res.status(201).json({ id: result.lastInsertRowid, message: 'Konto utworzone' });
-//    } catch {
-//        res.status(409).json({ error: 'Nazwa użytkownika lub e-mail jest już zajęty' });
-//    }
-//});
 
 app.post('/api/auth/register', validate(registerSchema), (req, res) => {
     const { username, email, password } = req.body;
@@ -324,25 +307,6 @@ app.get('/api/profile/:username', optionalAuth, (req, res) => {
     res.json({ user: publicUser(user), posts, replies, likedPosts, likedReplies });
 });
 
-//app.put('/api/me/profile', auth, (req, res) => {
-//    const current = stmtGetUserById.get(req.user.id);
-//    if (!current) return res.status(404).json({ error: 'Użytkownik nie istnieje' });
-//    const username = String(req.body.username ?? current.username).trim();
-//    const email = String(req.body.email ?? current.email).trim().toLowerCase();
-//    const bio = String(req.body.bio ?? '').trim().slice(0, 500);
-//    if (username.length < 3) return res.status(400).json({ error: 'Nazwa użytkownika musi mieć min. 3 znaki' });
-//    if (!email) return res.status(400).json({ error: 'E-mail jest wymagany' });
-//    try {
-//        db.prepare('UPDATE users SET username=?, email=?, bio=? WHERE id=?').run(username, email, bio, req.user.id);
-//        const updated = stmtGetUserById.get(req.user.id);
-//        const token = jwt.sign({ id: updated.id, username: updated.username, role: updated.role }, JWT_SECRET, { expiresIn: '2h' });
-//        res.cookie('token', token, { httpOnly: true, maxAge: 2 * 3600 * 1000 });
-//        res.json({ user: publicUser(updated), token });
-//    } catch {
-//        res.status(409).json({ error: 'Nazwa użytkownika lub e-mail jest już zajęty' });
-//    }
-//});
-
 app.put('/api/me/profile', auth, validate(profileSchema), (req, res) => {
     const { username, email, bio } = req.body;
     try {
@@ -356,13 +320,19 @@ app.put('/api/me/profile', auth, validate(profileSchema), (req, res) => {
     }
 });
 
-const upload = multer({
-    dest: uploadDir,
-    limits: { fileSize: 3 * 1024 * 1024 },
-    fileFilter: (_req, file, cb) => {
-        if (/^image\/(png|jpeg|webp|gif)$/.test(file.mimetype)) cb(null, true);
-        else cb(new Error('Dozwolone są tylko obrazy PNG, JPG, WEBP lub GIF'));
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        cb(null, `file-${Date.now()}-${Math.round(Math.random() * 1E9)}${ext}`);
     }
+});
+
+const upload = multer({
+    storage,
+    limits: { fileSize: 100 * 1024 * 1024 } 
 });
 
 app.post('/api/profile/avatar', auth, upload.single('avatar'), (req, res) => {
@@ -381,41 +351,58 @@ app.post('/api/profile/avatar', auth, upload.single('avatar'), (req, res) => {
     res.json({ avatar_url: avatarUrl });
 });
 
-//app.get('/api/posts', optionalAuth, (req, res) => {
-//    const posts = db.prepare(`
-//    SELECT p.id,p.title,p.content,p.category,p.published,p.created_at,u.username author,
-//      (SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id=p.id) likes,
-//      ${req.user ? 'EXISTS(SELECT 1 FROM post_likes me WHERE me.post_id=p.id AND me.user_id=@viewer) AS liked' : '0 AS liked'}
-//    FROM posts p JOIN users u ON u.id=p.user_id
-//    WHERE p.published=1 ORDER BY p.created_at DESC
-//  `).all(req.user ? { viewer: req.user.id } : {});
-//    res.json(posts);
-//});
-
 app.get('/api/posts', optionalAuth, (req, res) => {
-    const posts = db.prepare(`
-    SELECT p.id, p.title, p.content, p.category, p.published, p.created_at,
-      COALESCE(u.username, 'Nieznany użytkownik') AS author,
-      (SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id=p.id) likes,
-      ${req.user ? 'EXISTS(SELECT 1 FROM post_likes me WHERE me.post_id=p.id AND me.user_id=@viewer) AS liked' : '0 AS liked'}
-    FROM posts p LEFT JOIN users u ON u.id=p.user_id
-    WHERE p.published=1 ORDER BY p.created_at DESC
-  `).all(req.user ? { viewer: req.user.id } : {});
-    res.json(posts);
+    try {
+        const userId = req.user ? req.user.id : 0;
+
+        const posts = db.prepare(`
+            SELECT 
+                p.id,
+                p.title,
+                p.content,
+                p.category,
+                p.media_url,
+                (SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id) AS likes,
+                p.created_at,
+                COALESCE(u.username, 'Nieznany użytkownik') AS author,
+                EXISTS(SELECT 1 FROM post_likes me WHERE me.post_id = p.id AND me.user_id = ?) AS liked
+            FROM posts p
+            LEFT JOIN users u ON u.id = p.user_id 
+            WHERE p.published = 1
+            ORDER BY p.created_at DESC
+        `).all(userId);
+
+        res.json(posts);
+    } catch (err) {
+        console.error('Błąd pobierania postów:', err);
+        res.status(500).json({ error: 'Błąd podczas pobierania postów.' });
+    }
 });
 
-//app.post('/api/posts', auth, (req, res) => {
-//    const { title, content, category = 'Devlog' } = req.body;
-//    if (!title || !content) return res.status(400).json({ error: 'Tytuł i treść są wymagane' });
-//    const r = db.prepare('INSERT INTO posts(user_id,title,content,category) VALUES(?,?,?,?)').run(req.user.id, String(title).trim(), String(content).trim(), String(category).trim());
-//    res.status(201).json({ id: r.lastInsertRowid });
-//});
+app.post('/api/posts', auth, admin, upload.single('media_file'), (req, res) => {
+  const { title, content, category, media_url } = req.body;
 
-app.post('/api/posts', auth, validate(postSchema), (req, res) => {
-    const { title, content, category } = req.body;
-    const r = db.prepare('INSERT INTO posts(user_id,title,content,category) VALUES(?,?,?,?)')
-        .run(req.user.id, title, content, category);
-    res.status(201).json({ id: r.lastInsertRowid });
+  if (!title || !content) {
+    return res.status(400).json({ error: 'Tytuł i treść są wymagane.' });
+  }
+
+  let finalMediaUrl = media_url || null;
+  if (req.file) {
+    finalMediaUrl = `/uploads/${req.file.filename}`;
+  }
+
+  try {
+    const stmt = db.prepare(`
+      INSERT INTO posts (user_id, title, content, category, media_url) 
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    const result = stmt.run(req.user.id, title.trim(), content.trim(), category || 'Devlog', finalMediaUrl);
+
+    res.status(201).json({ id: result.lastInsertRowid, message: 'Wpis został pomyślnie dodany.' });
+  } catch (err) {
+    console.error('Błąd podczas dodawania posta:', err);
+    res.status(500).json({ error: 'Błąd podczas tworzenia wpisu.' });
+  }
 });
 
 app.post('/api/posts/:id/like', auth, (req, res) => {
@@ -428,26 +415,20 @@ app.post('/api/posts/:id/like', auth, (req, res) => {
     res.json({ liked: !existing, likes });
 });
 
+
 app.delete('/api/posts/:id', auth, admin, (req, res) => {
-    db.prepare('DELETE FROM posts WHERE id=?').run(req.params.id);
-    res.json({ message: 'Usunięto' });
+    try {
+        const result = db.prepare('DELETE FROM posts WHERE id = ?').run(req.params.id);
+
+        if (result.changes === 0) {
+            return res.status(404).json({ error: 'Post nie został znaleziony.' });
+        }
+
+        res.json({ message: 'Post został pomyślnie usunięty.' });
+    } catch (err) {
+        res.status(500).json({ error: 'Błąd podczas usuwania posta.' });
+    }
 });
-
-//app.get('/api/forum', (req, res) => {
-//    const threads = db.prepare(`SELECT t.id,t.title,t.content,t.created_at,u.username author,
-//    (SELECT COUNT(*) FROM forum_replies r WHERE r.thread_id=t.id) replies
-//    FROM forum_threads t JOIN users u ON u.id=t.user_id ORDER BY t.created_at DESC`).all();
-//    res.json(threads);
-//});
-
-//app.get('/api/forum', (req, res) => {
-//    const threads = db.prepare(`
-//    SELECT t.id, t.title, t.content, t.created_at,
-//      COALESCE(u.username, 'Nieznany użytkownik') AS author,
-//      (SELECT COUNT(*) FROM forum_replies r WHERE r.thread_id=t.id) replies
-//    FROM forum_threads t LEFT JOIN users u ON u.id=t.user_id ORDER BY t.created_at DESC`).all();
-//    res.json(threads);
-//});
 
 app.get('/api/forum', optionalAuth, (req, res) => {
     const isAdmin = req.user && req.user.role === 'admin';
@@ -470,14 +451,6 @@ app.get('/api/forum/:id', optionalAuth, (req, res) => {
     FROM forum_threads t LEFT JOIN users u ON u.id=t.user_id WHERE t.id=?`).get(req.params.id);
 
     if (!thread) return res.status(404).json({ error: 'Nie znaleziono tematu' });
-
-    //const replies = db.prepare(`
-    //SELECT r.id, r.content, r.created_at, r.user_id,
-    //  COALESCE(u.username, 'Nieznany użytkownik') AS author,
-    //  (SELECT COUNT(*) FROM reply_likes rl WHERE rl.reply_id=r.id) likes,
-    //  ${req.user ? 'EXISTS(SELECT 1 FROM reply_likes me WHERE me.reply_id=r.id AND me.user_id=@viewer) AS liked' : '0 AS liked'}
-    //FROM forum_replies r LEFT JOIN users u ON u.id=r.user_id
-    //WHERE r.thread_id=@threadId ORDER BY r.created_at ASC`).all(req.user ? { viewer: req.user.id, threadId: req.params.id } : { threadId: req.params.id });
 
     const replies = db.prepare(`
     SELECT r.id, r.content, r.created_at, r.user_id,
@@ -510,24 +483,6 @@ app.delete('/api/admin/forum/replies/:id', auth, admin, (req, res) => {
     db.prepare('DELETE FROM forum_replies WHERE id = ?').run(req.params.id);
     res.json({ success: true });
 });
-
-//app.get('/api/forum/:id', optionalAuth, (req, res) => {
-//    const thread = db.prepare(`SELECT t.id,t.title,t.content,t.created_at,t.user_id,u.username author
-//    FROM forum_threads t JOIN users u ON u.id=t.user_id WHERE t.id=?`).get(req.params.id);
-//    if (!thread) return res.status(404).json({ error: 'Nie znaleziono tematu' });
-//    const replies = db.prepare(`SELECT r.id,r.content,r.created_at,r.user_id,u.username author,
-//    (SELECT COUNT(*) FROM reply_likes rl WHERE rl.reply_id=r.id) likes,
-//    ${req.user ? 'EXISTS(SELECT 1 FROM reply_likes me WHERE me.reply_id=r.id AND me.user_id=@viewer) AS liked' : '0 AS liked'}
-//    FROM forum_replies r JOIN users u ON u.id=r.user_id WHERE r.thread_id=@threadId ORDER BY r.created_at ASC`).all(req.user ? { viewer: req.user.id, threadId: req.params.id } : { threadId: req.params.id });
-//    res.json({ thread, replies });
-//});
-
-//app.post('/api/forum', auth, (req, res) => {
-//    const { title, content } = req.body;
-//    if (!title || !content) return res.status(400).json({ error: 'Tytuł i treść są wymagane' });
-//    const r = db.prepare('INSERT INTO forum_threads(user_id,title,content) VALUES(?,?,?)').run(req.user.id, String(title).trim(), String(content).trim());
-//    res.status(201).json({ id: r.lastInsertRowid });
-//});
 
 app.post('/api/forum', auth, validate(forumThreadSchema), (req, res) => {
     const { title, content } = req.body;
