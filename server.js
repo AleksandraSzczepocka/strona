@@ -517,6 +517,41 @@ app.patch('/api/admin/forum/threads/:id/toggle', auth, admin, (req, res) => {
     res.json({ success: true });
 });
 
+//app.put('/api/forum/threads/:id', auth, (req, res) => {
+//    try {
+//        const threadId = req.params.id;
+//        const title = String(req.body.title || '').trim();
+//        const content = String(req.body.content || '').trim();
+
+//        if (!title || !content) {
+//            return res.status(400).json({ error: 'Tytuł i treść nie mogą być puste.' });
+//        }
+
+//        const thread = db.prepare('SELECT * FROM forum_threads WHERE id = ?').get(threadId);
+//        if (!thread) return res.status(404).json({ error: 'Wątek nie istnieje.' });
+
+//        const isAdmin = req.user.role === 'admin';
+//        if (!isAdmin) {
+//            if (thread.user_id !== req.user.id) {
+//                return res.status(403).json({ error: 'Nie jesteś autorem tego wątku.' });
+//            }
+
+//            //const createdTime = new Date(thread.created_at).getTime();
+//            const createdTime = new Date(thread.created_at.endsWith('Z') ? thread.created_at : thread.created_at + 'Z').getTime();
+//            const minutesPassed = (Date.now() - createdTime) / (1000 * 60);
+
+//            if (minutesPassed > 15) {
+//                return res.status(403).json({ error: 'Upłynął czas na edycję wątku (max 15 minut).' });
+//            }
+//        }
+
+//        db.prepare('UPDATE forum_threads SET title = ?, content = ? WHERE id = ?').run(title, content, threadId);
+//        res.json({ message: 'Wątek został zaktualizowany.' });
+//    } catch (err) {
+//        res.status(500).json({ error: 'Błąd serwera podczas edycji wątku.' });
+//    }
+//});
+
 app.put('/api/forum/threads/:id', auth, (req, res) => {
     try {
         const threadId = req.params.id;
@@ -536,7 +571,11 @@ app.put('/api/forum/threads/:id', auth, (req, res) => {
                 return res.status(403).json({ error: 'Nie jesteś autorem tego wątku.' });
             }
 
-            //const createdTime = new Date(thread.created_at).getTime();
+            const hasUpdate = db.prepare('SELECT 1 FROM forum_replies WHERE thread_id = ? AND is_update = 1 LIMIT 1').get(threadId);
+            if (hasUpdate) {
+                return res.status(403).json({ error: 'Nie możesz edytować głównej treści, ponieważ dodano już aktualizację (UPDATE).' });
+            }
+
             const createdTime = new Date(thread.created_at.endsWith('Z') ? thread.created_at : thread.created_at + 'Z').getTime();
             const minutesPassed = (Date.now() - createdTime) / (1000 * 60);
 
@@ -618,6 +657,31 @@ app.post('/api/forum/threads/:id/status', auth, (req, res) => {
     }
 });
 
+//app.post('/api/forum/threads/:id/append-update', auth, (req, res) => {
+//    try {
+//        const threadId = req.params.id;
+//        const updateText = String(req.body.content || '').trim();
+//        if (!updateText) return res.status(400).json({ error: 'Treść aktualizacji nie może być pusta.' });
+
+//        const thread = db.prepare('SELECT * FROM forum_threads WHERE id = ?').get(threadId);
+//        if (!thread) return res.status(404).json({ error: 'Wątek nie istnieje.' });
+
+//        const isAdmin = req.user.role === 'admin';
+//        if (thread.user_id !== req.user.id && !isAdmin) {
+//            return res.status(403).json({ error: 'Brak uprawnień do edycji wątku.' });
+//        }
+
+//        const formattedDate = new Date().toLocaleString('pl-PL');
+//        const appendedContent = `${thread.content}\n\n--- UPDATE (${formattedDate}) ---\n${updateText}`;
+
+//        db.prepare('UPDATE forum_threads SET content = ? WHERE id = ?').run(appendedContent, threadId);
+
+//        res.json({ message: 'Zaktualizowano treść wątku.' });
+//    } catch (err) {
+//        res.status(500).json({ error: 'Błąd serwera.' });
+//    }
+//});
+
 app.post('/api/forum/threads/:id/append-update', auth, (req, res) => {
     try {
         const threadId = req.params.id;
@@ -629,15 +693,13 @@ app.post('/api/forum/threads/:id/append-update', auth, (req, res) => {
 
         const isAdmin = req.user.role === 'admin';
         if (thread.user_id !== req.user.id && !isAdmin) {
-            return res.status(403).json({ error: 'Brak uprawnień do edycji wątku.' });
+            return res.status(403).json({ error: 'Brak uprawnień do dodawania aktualizacji.' });
         }
 
-        const formattedDate = new Date().toLocaleString('pl-PL');
-        const appendedContent = `${thread.content}\n\n--- UPDATE (${formattedDate}) ---\n${updateText}`;
+        db.prepare('INSERT INTO forum_replies (thread_id, user_id, content, is_update) VALUES (?, ?, ?, 1)')
+            .run(threadId, req.user.id, updateText);
 
-        db.prepare('UPDATE forum_threads SET content = ? WHERE id = ?').run(appendedContent, threadId);
-
-        res.json({ message: 'Zaktualizowano treść wątku.' });
+        res.json({ message: 'Dodano aktualizację do wątku.' });
     } catch (err) {
         res.status(500).json({ error: 'Błąd serwera.' });
     }
