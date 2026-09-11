@@ -25,10 +25,15 @@ Konto admina jest tworzone automatycznie, jeśli w bazie nie ma jeszcze administ
 Pliki źródłowe stylów znajdują się w katalogu `public/scss/` (lub `src/scss/`).
 
 * **Nie edytuj czystych plików `.css`!** Wszystkie zmiany wprowadzaj w plikach z rozszerzeniem `.scss`.
+
 * **Kompilacja na żywo:** Podczas pracy w trybie deweloperskim (`npm run dev`) proces kompilacji działa w tle. Zapisanie pliku `.scss` automatycznie buduje wyjściowy plik CSS w katalogu `public/css/`.
+
 * **Co warto wykorzystywać w SCSS?**
+
   * **Zmienne (`$kolor`):** Przechowuj kolory, fonty i odstępy w jednym miejscu (np. `$primary-color: #ff4500;`).
+  
   * **Nestowanie (zagnieżdżanie):** Możesz pisać reguły CSS wewnątrz innych reguł, np.:
+  
     ```scss
     .card {
       background: #222;
@@ -37,6 +42,7 @@ Pliki źródłowe stylów znajdują się w katalogu `public/scss/` (lub `src/scs
       }
     }
     ```
+  
   * **Podział na moduły:** Możesz tworzyć mniejsze pliki z przedrostkiem `_` (np. `_buttons.scss`) i importować je w głównym pliku za pomocą `@use 'buttons';`.
 
 ---
@@ -60,8 +66,8 @@ Pliki widoków znajdują się w folderze `views/`. Twig to silnik szablonów, kt
     
     - Pętla po elementach:
       
-    ```{% for post in posts %}
-            <div class="post-card">
+    ```twig       {% for post in posts %}
+          <div class="post-card">
             <h3>{{ post.title }}</h3>
           </div>
        {% else %}
@@ -71,7 +77,8 @@ Pliki widoków znajdują się w folderze `views/`. Twig to silnik szablonów, kt
 
     - Instrukcja warunkowa:
       
-    ```{% if user %}
+    ```twig
+    {% if user %}
       <p>Witaj, {{ user.username }}!</p>
     {% else %}
       <a href="/login">Zaloguj się</a>
@@ -81,7 +88,8 @@ Pliki widoków znajdują się w folderze `views/`. Twig to silnik szablonów, kt
 3. **Dziedziczenie szablonów (extends / block)** 
    Większość podstron rozszerza bazowy szablon `layout.twig`, aby nie powielać nagłówka (header) i stopki (footer):
    
-    ```{% extends 'layout.twig' %}
+    ```twig
+        {% extends 'layout.twig' %}
         {% block content %}
           <h2>Tytuł podstrony</h2>
           <p>Treść Twojej podstrony...</p>
