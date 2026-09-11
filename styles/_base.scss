@@ -1,4 +1,6 @@
-﻿* {
+﻿@import url('https://fonts.googleapis.com/css2?family=Geist+Pixel&family=Syne+Mono&display=swap');
+
+* {
     box-sizing: border-box
 }
 
@@ -7,7 +9,7 @@ body {
     margin: 0;
     background: var(--black);
     color: var(--white);
-    font-family: Arial,Helvetica,sans-serif
+    font-family: "Geist Pixel", sans-serif;
 }
 
 a {
@@ -16,7 +18,7 @@ a {
 }
 
 .eyebrow {
-    font: 700 10px monospace;
+    font: 700 14px monospace;
     letter-spacing: 2px;
     color: var(--green);
     text-transform: uppercase
