@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS forum_threads (
   user_id INTEGER NOT NULL,
   title TEXT NOT NULL,
   content TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
 );
@@ -62,6 +63,7 @@ CREATE TABLE IF NOT EXISTS forum_replies (
   thread_id INTEGER NOT NULL,
   user_id INTEGER NOT NULL,
   content TEXT NOT NULL,
+  is_update INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(thread_id) REFERENCES forum_threads(id) ON DELETE CASCADE,
   FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
@@ -230,6 +232,8 @@ app.get('/logout', (req, res) => {
     res.redirect('/');
 });
 
+
+
 app.post('/api/auth/register', validate(registerSchema), (req, res) => {
     const { username, email, password } = req.body;
 
@@ -261,6 +265,9 @@ app.post('/api/auth/login', (req, res) => {
         return res.status(500).json({ error: 'Błąd serwera podczas logowania' });
     }
 });
+
+
+
 
 app.get('/api/me', auth, (req, res) => {
     const user = stmtGetUserById.get(req.user.id);
@@ -351,6 +358,11 @@ app.post('/api/profile/avatar', auth, upload.single('avatar'), (req, res) => {
     res.json({ avatar_url: avatarUrl });
 });
 
+
+
+
+
+
 app.get('/api/posts', optionalAuth, (req, res) => {
     try {
         const userId = req.user ? req.user.id : 0;
@@ -430,6 +442,42 @@ app.delete('/api/posts/:id', auth, admin, (req, res) => {
     }
 });
 
+app.put('/api/posts/:id', auth, admin, upload.single('media'), (req, res) => {
+    try {
+        const { title, content, category, remove_media } = req.body;
+        const postId = req.params.id;
+
+        const post = db.prepare('SELECT * FROM posts WHERE id = ?').get(postId);
+        if (!post) {
+            return res.status(404).json({ error: 'Post nie został znaleziony.' });
+        }
+
+        let mediaUrl = post.media_url;
+
+        if (req.file) {
+            mediaUrl = `/uploads/${req.file.filename}`;
+        }
+        else if (remove_media === 'true') {
+            mediaUrl = null;
+        }
+
+        db.prepare(`
+            UPDATE posts 
+            SET title = ?, content = ?, category = ?, media_url = ?
+            WHERE id = ?
+        `).run(title, content, category, mediaUrl, postId);
+
+        res.json({ message: 'Post został pomyślnie zaktualizowany.' });
+    } catch (err) {
+        res.status(500).json({ error: 'Błąd podczas edycji posta.' });
+    }
+});
+
+
+
+
+
+
 app.get('/api/forum', optionalAuth, (req, res) => {
     const isAdmin = req.user && req.user.role === 'admin';
     const whereClause = isAdmin ? '' : 'WHERE t.is_active = 1';
@@ -446,17 +494,17 @@ app.get('/api/forum', optionalAuth, (req, res) => {
 
 app.get('/api/forum/:id', optionalAuth, (req, res) => {
     const thread = db.prepare(`
-    SELECT t.id, t.title, t.content, t.created_at, t.user_id,
+    SELECT t.id, t.title, t.content, t.created_at, t.user_id, t.status,
       COALESCE(u.username, 'Nieznany użytkownik') AS author
     FROM forum_threads t LEFT JOIN users u ON u.id=t.user_id WHERE t.id=?`).get(req.params.id);
 
     if (!thread) return res.status(404).json({ error: 'Nie znaleziono tematu' });
 
     const replies = db.prepare(`
-    SELECT r.id, r.content, r.created_at, r.user_id,
+    SELECT r.id, r.content, r.created_at, r.user_id, r.is_update,
     COALESCE(u.username, 'Nieznany użytkownik') AS author, u.avatar_url AS avatar,
     (SELECT COUNT(*) FROM reply_likes rl WHERE rl.reply_id=r.id) likes,
-  ${req.user ? 'EXISTS(SELECT 1 FROM reply_likes me WHERE me.reply_id=r.id AND me.user_id=@viewer) AS liked' : '0 AS liked'}
+    ${req.user ? 'EXISTS(SELECT 1 FROM reply_likes me WHERE me.reply_id=r.id AND me.user_id=@viewer) AS liked' : '0 AS liked'}
     FROM forum_replies r LEFT JOIN users u ON u.id=r.user_id 
     WHERE r.thread_id=@threadId ORDER BY r.created_at ASC`).all(req.user ? { viewer: req.user.id, threadId: req.params.id } : { threadId: req.params.id });
 
@@ -468,6 +516,42 @@ app.patch('/api/admin/forum/threads/:id/toggle', auth, admin, (req, res) => {
     db.prepare('UPDATE forum_threads SET is_active = CASE WHEN is_active = 1 THEN 0 ELSE 1 END WHERE id = ?').run(req.params.id);
     res.json({ success: true });
 });
+
+app.put('/api/forum/threads/:id', auth, (req, res) => {
+    try {
+        const threadId = req.params.id;
+        const title = String(req.body.title || '').trim();
+        const content = String(req.body.content || '').trim();
+
+        if (!title || !content) {
+            return res.status(400).json({ error: 'Tytuł i treść nie mogą być puste.' });
+        }
+
+        const thread = db.prepare('SELECT * FROM forum_threads WHERE id = ?').get(threadId);
+        if (!thread) return res.status(404).json({ error: 'Wątek nie istnieje.' });
+
+        const isAdmin = req.user.role === 'admin';
+        if (!isAdmin) {
+            if (thread.user_id !== req.user.id) {
+                return res.status(403).json({ error: 'Nie jesteś autorem tego wątku.' });
+            }
+
+            //const createdTime = new Date(thread.created_at).getTime();
+            const createdTime = new Date(thread.created_at.endsWith('Z') ? thread.created_at : thread.created_at + 'Z').getTime();
+            const minutesPassed = (Date.now() - createdTime) / (1000 * 60);
+
+            if (minutesPassed > 15) {
+                return res.status(403).json({ error: 'Upłynął czas na edycję wątku (max 15 minut).' });
+            }
+        }
+
+        db.prepare('UPDATE forum_threads SET title = ?, content = ? WHERE id = ?').run(title, content, threadId);
+        res.json({ message: 'Wątek został zaktualizowany.' });
+    } catch (err) {
+        res.status(500).json({ error: 'Błąd serwera podczas edycji wątku.' });
+    }
+});
+
 
 app.delete('/api/admin/forum/threads/:id', auth, admin, (req, res) => {
     db.prepare('DELETE FROM forum_threads WHERE id = ?').run(req.params.id);
@@ -482,6 +566,81 @@ app.patch('/api/admin/forum/replies/:id/toggle', auth, admin, (req, res) => {
 app.delete('/api/admin/forum/replies/:id', auth, admin, (req, res) => {
     db.prepare('DELETE FROM forum_replies WHERE id = ?').run(req.params.id);
     res.json({ success: true });
+});
+
+app.put('/api/forum/replies/:id', auth, (req, res) => {
+    try {
+        const replyId = req.params.id;
+        const content = String(req.body.content || '').trim();
+        if (!content) return res.status(400).json({ error: 'Treść odpowiedzi nie może być pusta.' });
+
+        const reply = db.prepare('SELECT * FROM forum_replies WHERE id = ?').get(replyId);
+        if (!reply) return res.status(404).json({ error: 'Odpowiedź nie istnieje.' });
+
+        const isAdmin = req.user.role === 'admin';
+        if (!isAdmin) {
+            if (reply.user_id !== req.user.id) {
+                return res.status(403).json({ error: 'Nie możesz edytować tej odpowiedzi.' });
+            }
+            //const createdTime = new Date(reply.created_at).getTime();
+            const createdTime = new Date(reply.created_at.toISOString ? reply.created_at.toISOString() : reply.created_at + 'Z').getTime();
+            const minutesPassed = (Date.now() - createdTime) / (1000 * 60);
+            if (minutesPassed > 15) {
+                return res.status(403).json({ error: 'Upłynął czas na edycję (max 15 min).' });
+            }
+        }
+
+        db.prepare('UPDATE forum_replies SET content = ? WHERE id = ?').run(content, replyId);
+        res.json({ message: 'Zaktualizowano odpowiedź.' });
+    } catch (err) {
+        res.status(500).json({ error: 'Błąd serwera.' });
+    }
+});
+
+
+app.post('/api/forum/threads/:id/status', auth, (req, res) => {
+    try {
+        const threadId = req.params.id;
+        const { status } = req.body;
+
+        const thread = db.prepare('SELECT * FROM forum_threads WHERE id = ?').get(threadId);
+        if (!thread) return res.status(404).json({ error: 'Wątek nie istnieje.' });
+
+        const isAdmin = req.user.role === 'admin';
+        if (thread.user_id !== req.user.id && !isAdmin) {
+            return res.status(403).json({ error: 'Tylko autor lub admin może zmienić status.' });
+        }
+
+        db.prepare('UPDATE forum_threads SET status = ? WHERE id = ?').run(status, threadId);
+        res.json({ message: 'Zaktualizowano status wątku.' });
+    } catch (err) {
+        res.status(500).json({ error: 'Błąd serwera.' });
+    }
+});
+
+app.post('/api/forum/threads/:id/append-update', auth, (req, res) => {
+    try {
+        const threadId = req.params.id;
+        const updateText = String(req.body.content || '').trim();
+        if (!updateText) return res.status(400).json({ error: 'Treść aktualizacji nie może być pusta.' });
+
+        const thread = db.prepare('SELECT * FROM forum_threads WHERE id = ?').get(threadId);
+        if (!thread) return res.status(404).json({ error: 'Wątek nie istnieje.' });
+
+        const isAdmin = req.user.role === 'admin';
+        if (thread.user_id !== req.user.id && !isAdmin) {
+            return res.status(403).json({ error: 'Brak uprawnień do edycji wątku.' });
+        }
+
+        const formattedDate = new Date().toLocaleString('pl-PL');
+        const appendedContent = `${thread.content}\n\n--- UPDATE (${formattedDate}) ---\n${updateText}`;
+
+        db.prepare('UPDATE forum_threads SET content = ? WHERE id = ?').run(appendedContent, threadId);
+
+        res.json({ message: 'Zaktualizowano treść wątku.' });
+    } catch (err) {
+        res.status(500).json({ error: 'Błąd serwera.' });
+    }
 });
 
 app.post('/api/forum', auth, validate(forumThreadSchema), (req, res) => {

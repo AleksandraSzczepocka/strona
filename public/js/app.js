@@ -13,6 +13,7 @@ async function api(url, opts = {}) {
   return d;
 }
 
+
 function msg(t) {
     if (!t) return;
 
@@ -43,6 +44,11 @@ function msg(t) {
 function esc(value = '') {
   return String(value).replace(/[&<>'"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[c]));
 }
+
+//function avatar(user, size = '') {
+//  if (user?.avatar_url) return `<img class="avatar ${size}" src="${esc(user.avatar_url)}" alt="Profilówka ${esc(user.username)}">`;
+//  return `<div class="avatar avatar-placeholder ${size}">${esc((user?.username || '?').slice(0,1).toUpperCase())}</div>`;
+//}
 
 function avatar(user, size = '') {
     const imgUrl = user?.avatar_url || user?.avatar;
@@ -76,6 +82,8 @@ function logout() {
     localStorage.removeItem('mh_token');
     window.location.href = '/logout';
 };
+
+
 
 async function loadPosts() {
     const el = document.getElementById('posts');
@@ -122,7 +130,7 @@ async function loadPosts() {
                 else if (lowerUrl.match(/\.(zip|rar|7z|tar|gz)$/)) {
                     mediaHtml = `
             <div class="post-media file-attachment">
-              <a href="${esc(url)}" class="btn ghost" download>Pobierz załącznik (${esc(url.split('/').pop())})</a>
+              <a href="${esc(url)}" class="btn ghost" download>📦 Pobierz załącznik (${esc(url.split('/').pop())})</a>
             </div>`;
                 }
                 else if (lowerUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/)) {
@@ -150,7 +158,12 @@ async function loadPosts() {
           ${mediaHtml}
           <div class="post-footer">
             <span class="post-author">Autor: <strong>${esc(p.author || 'Admin')}</strong></span>
-            ${isAdmin ? `<button class="btn danger" data-delete-post="${p.id}">Usuń</button>` : ''}
+            ${isAdmin ? `
+              <div class="admin-post-actions">
+                <button class="btn ghost" data-edit-post="${p.id}">Edytuj</button>
+                <button class="btn danger" data-delete-post="${p.id}">Usuń</button>
+              </div>
+            ` : ''}
           </div>
         </article>
       `;
@@ -159,6 +172,7 @@ async function loadPosts() {
         el.innerHTML = html;
 
         if (isAdmin) {
+ 
             el.querySelectorAll('[data-delete-post]').forEach(btn => {
                 btn.onclick = async () => {
                     if (!confirm('Czy na pewno chcesz usunąć ten post?')) return;
@@ -171,11 +185,88 @@ async function loadPosts() {
                     }
                 };
             });
+
+
+            el.querySelectorAll('[data-edit-post]').forEach(btn => {
+                btn.onclick = () => {
+                    const postCard = btn.closest('.post-card');
+                    const postId = btn.dataset.editPost;
+
+                    const title = postCard.querySelector('h2').textContent;
+                    const content = postCard.querySelector('.post-content').textContent;
+                    const category = postCard.querySelector('.post-category').textContent;
+                    const hasMedia = !!postCard.querySelector('.post-media');
+
+                    postCard.innerHTML = `
+                        <form class="edit-post-form" data-id="${postId}">
+                            <h3>Edycja posta</h3>
+                            
+                            <div class="form-group">
+                                <label for="edit-title-${postId}">Tytuł</label>
+                                <input type="text" id="edit-title-${postId}" name="title" value="${esc(title)}" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="edit-category-${postId}">Kategoria</label>
+                                <input type="text" id="edit-category-${postId}" name="category" value="${esc(category)}" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="edit-content-${postId}">Treść</label>
+                                <textarea id="edit-content-${postId}" name="content" required>${esc(content)}</textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="edit-media-${postId}">Zmień plik / multimedia</label>
+                                <input type="file" id="edit-media-${postId}" name="media">
+                            </div>
+
+                            ${hasMedia ? `
+                                <div class="form-group checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="remove_media" value="true"> 
+                                        Usuń aktualny załącznik / multimedia
+                                    </label>
+                                </div>
+                            ` : ''}
+
+                            <div class="edit-form-actions">
+                                <button type="submit" class="btn">Zapisz zmiany</button>
+                                <button type="button" class="btn ghost btn-cancel">Anuluj</button>
+                            </div>
+                        </form>
+                    `;
+
+     
+                    postCard.querySelector('.btn-cancel').onclick = () => loadPosts();
+
+      
+                    postCard.querySelector('form').onsubmit = async (e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.target);
+
+                        try {
+                            await api(`/api/posts/${postId}`, {
+                                method: 'PUT',
+                                body: formData
+                            });
+                            msg('Post został pomyślnie zaktualizowany.');
+                            loadPosts();
+                        } catch (err) {
+                            msg(err.message);
+                        }
+                    };
+                };
+            });
         }
     } catch (err) {
         el.innerHTML = '<p class="error">Nie udało się wczytać wpisów.</p>';
     }
 }
+
+
+
+
 
 async function loadForum() {
     const el = document.getElementById('threads');
@@ -231,26 +322,239 @@ async function loadForum() {
 }
 
 async function loadThread() {
-  const el = document.getElementById('threadView');
-  if (!el) return;
-  const id = new URLSearchParams(location.search).get('thread');
-  if (!id) { el.innerHTML = '<div class="empty">Wybierz temat z listy forum.</div>'; return; }
-  try {
-    const data = await api('/api/forum/' + id);
-    el.innerHTML = `<article class="thread-full"><div class="eyebrow">TEMAT FORUM</div><h2>${esc(data.thread.title)}</h2><p>${esc(data.thread.content)}</p><small>Autor: <a class="profile-link" href="/profile?u=${encodeURIComponent(data.thread.author)}">${esc(data.thread.author)}</a></small></article>
-      <div class="replies"><h2>ODPOWIEDZI (${data.replies.length})</h2>${data.replies.map(r => `<article class="reply"><div class="reply-head">${avatar({ avatar_url: r.avatar, username: r.author })}<div><a class="profile-link" href="/profile?u=${encodeURIComponent(r.author)}">${esc(r.author)}</a><small>${new Date(r.created_at).toLocaleString('pl-PL')}</small></div></div><p>${esc(r.content)}</p><button class="like-btn ${r.liked ? 'liked' : ''}" data-like-reply="${r.id}">♥ <span>${r.likes || 0}</span></button></article>`).join('')}</div>
-      <div class="new-thread"><h2>ODPOWIEDZ</h2><form id="replyForm"><textarea name="content" placeholder="Napisz odpowiedź..." required></textarea><button class="btn">Odpowiedz</button></form></div>`;
-    el.querySelectorAll('[data-like-reply]').forEach(b => b.onclick = async () => {
-      if (!token()) { location.href = '/login'; return; }
-      try { const d = await api('/api/forum/replies/' + b.dataset.likeReply + '/like', { method:'POST' }); b.classList.toggle('liked', d.liked); b.querySelector('span').textContent = d.likes; } catch(e) { msg(e.message); }
-    });
-    document.getElementById('replyForm').onsubmit = async e => {
-      e.preventDefault();
-      if (!token()) { location.href='/login'; return; }
-      try { await api('/api/forum/' + id + '/replies', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(Object.fromEntries(new FormData(e.target))) }); await loadThread(); }
-      catch(x) { msg(x.message); }
-    };
-  } catch (e) { el.textContent = e.message; }
+    const el = document.getElementById('threadView');
+    if (!el) return;
+    const id = new URLSearchParams(location.search).get('thread');
+    if (!id) { el.innerHTML = '<div class="empty">Wybierz temat z listy forum.</div>'; return; }
+
+    try {
+        const data = await api('/api/forum/' + id);
+        const currentUser = token() ? await api('/api/me').catch(() => null) : null;
+        const isAdmin = currentUser?.role === 'admin';
+        const isThreadAuthor = currentUser && currentUser.id === data.thread.user_id;
+        const isClosed = data.thread.status === 'closed';
+
+
+        const threadCreatedAt = data.thread.created_at.endsWith('Z') ? data.thread.created_at : data.thread.created_at + 'Z';
+        const threadMinutesPassed = (Date.now() - new Date(threadCreatedAt).getTime()) / (1000 * 60);
+        //const threadMinutesPassed = (Date.now() - new Date(data.thread.created_at).getTime()) / (1000 * 60);
+        const canEditThread = isAdmin || (isThreadAuthor && threadMinutesPassed <= 15);
+
+        let authorControls = '';
+        if (isThreadAuthor || isAdmin) {
+            authorControls = `
+        <div class="author-tools">
+          <div class="author-tools-header">
+            <span>Status wątku: <strong class="status-tag ${isClosed ? 'closed' : 'open'}">${isClosed ? 'ZAMKNIĘTY' : 'OTWARTY'}</strong></span>
+            <div class="author-tools-actions">
+              ${canEditThread ? '<button class="btn ghost btn-sm" id="editThreadBtn">Edytuj wątek</button>' : ''}
+              <button class="btn ghost btn-sm" id="toggleUpdateFormBtn">Dodaj UPDATE do posta</button>
+              <button class="btn ghost btn-sm" id="toggleStatusBtn">
+                ${isClosed ? 'Otwórz wątek' : 'Zamknij wątek'}
+              </button>
+            </div>
+          </div>
+
+          <form id="editThreadForm" class="update-form hidden">
+            <div class="form-group">
+              <label><strong>Tytuł wątku:</strong></label>
+              <input type="text" name="title" value="${esc(data.thread.title)}" required style="width:100%; margin-bottom:10px;">
+            </div>
+            <div class="form-group">
+              <label><strong>Treść wątku:</strong></label>
+              <textarea name="content" required style="width:100%; height:120px;">${esc(data.thread.content)}</textarea>
+            </div>
+            <div class="update-form-buttons">
+              <button type="submit" class="btn btn-sm">Zapisz zmiany</button>
+              <button type="button" class="btn ghost btn-sm" id="cancelEditThreadBtn">Anuluj</button>
+            </div>
+          </form>
+
+          <form id="updateForm" class="update-form hidden">
+            <label><strong>Treść aktualizacji (doklei się na dole głównego posta):</strong></label>
+            <textarea name="content" placeholder="Wpisz treść aktualizacji..." required></textarea>
+            <div class="update-form-buttons">
+              <button type="submit" class="btn btn-sm">Doklej UPDATE</button>
+              <button type="button" class="btn ghost btn-sm" id="cancelUpdateBtn">Anuluj</button>
+            </div>
+          </form>
+        </div>
+      `;
+        }
+
+        const formattedThreadContent = esc(data.thread.content).replace(
+            (/--- UPDATE \((.*?)\) ---\n([\s\S]*?)(?=(--- UPDATE|$))/g),
+            '<div class="thread-update-block"><div class="update-label">UPDATE ($1)</div>$2</div>'
+        );
+
+        const repliesHtml = data.replies.map(r => {
+            const isReplyAuthor = currentUser && currentUser.id === r.user_id;
+            const replyCreatedAt = r.created_at.endsWith('Z') ? r.created_at : r.created_at + 'Z';
+            const minutesPassed = (Date.now() - new Date(replyCreatedAt).getTime()) / (1000 * 60);
+            //const minutesPassed = (Date.now() - new Date(r.created_at).getTime()) / (1000 * 60);
+            const canEdit = isAdmin || (isReplyAuthor && minutesPassed <= 15);
+
+            return `
+        <article class="reply" id="reply-${r.id}">
+          <div class="reply-head">
+            ${avatar({ avatar_url: r.avatar, username: r.author })}
+            <div>
+              <a class="profile-link" href="/profile?u=${encodeURIComponent(r.author)}">${esc(r.author)}</a>
+              <small>${new Date(r.created_at).toLocaleString('pl-PL')}</small>
+            </div>
+          </div>
+          <div class="reply-content">${esc(r.content)}</div>
+          <div class="reply-actions">
+            <button class="like-btn ${r.liked ? 'liked' : ''}" data-like-reply="${r.id}">♥ <span>${r.likes || 0}</span></button>
+            ${canEdit ? `<button class="btn ghost btn-sm" data-edit-reply="${r.id}">Edytuj</button>` : ''}
+          </div>
+        </article>
+      `;
+        }).join('');
+
+        el.innerHTML = `
+      <article class="thread-full">
+        <div class="eyebrow">TEMAT FORUM ${isClosed ? '• [ZAMKNIĘTY]' : ''}</div>
+        <h2>${esc(data.thread.title)}</h2>
+        <div class="thread-body">${formattedThreadContent}</div>
+        <small>Autor: <a class="profile-link" href="/profile?u=${encodeURIComponent(data.thread.author)}">${esc(data.thread.author)}</a></small>
+        ${authorControls}
+      </article>
+
+      <div class="replies">
+        <h2>ODPOWIEDZI (${data.replies.length})</h2>
+        ${repliesHtml}
+      </div>
+
+      <div class="new-thread">
+        ${isClosed ? '<div class="thread-closed-msg">Ten wątek został zamknięty. Nie można dodawać nowych odpowiedzi.</div>' : `
+          <h2>ODPOWIEDZ</h2>
+          <form id="replyForm">
+            <textarea name="content" placeholder="Napisz odpowiedź..." required></textarea>
+            <button class="btn">Odpowiedz</button>
+          </form>
+        `}
+      </div>
+    `;
+
+        const editThreadBtn = document.getElementById('editThreadBtn');
+        const editThreadForm = document.getElementById('editThreadForm');
+        const cancelEditThreadBtn = document.getElementById('cancelEditThreadBtn');
+
+        if (editThreadBtn) {
+            editThreadBtn.onclick = () => editThreadForm.classList.toggle('hidden');
+            cancelEditThreadBtn.onclick = () => editThreadForm.classList.add('hidden');
+
+            editThreadForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const title = editThreadForm.querySelector('input[name="title"]').value;
+                const content = editThreadForm.querySelector('textarea[name="content"]').value;
+
+                try {
+                    await api(`/api/forum/threads/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title, content })
+                    });
+                    msg('Wątek został zaktualizowany.');
+                    loadThread();
+                } catch (err) { msg(err.message); }
+            };
+        }
+
+        const updateBtn = document.getElementById('toggleUpdateFormBtn');
+        const updateForm = document.getElementById('updateForm');
+        const cancelUpdateBtn = document.getElementById('cancelUpdateBtn');
+
+        if (updateBtn) {
+            updateBtn.onclick = () => updateForm.classList.toggle('hidden');
+            cancelUpdateBtn.onclick = () => updateForm.classList.add('hidden');
+
+            updateForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const content = updateForm.querySelector('textarea').value;
+                try {
+                    await api(`/api/forum/threads/${id}/append-update`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ content })
+                    });
+                    msg('Doklejono aktualizację!');
+                    loadThread();
+                } catch (err) { msg(err.message); }
+            };
+        }
+
+        const toggleStatusBtn = document.getElementById('toggleStatusBtn');
+        if (toggleStatusBtn) {
+            toggleStatusBtn.onclick = async () => {
+                const newStatus = isClosed ? 'open' : 'closed';
+                try {
+                    await api(`/api/forum/threads/${id}/status`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: newStatus })
+                    });
+                    msg(isClosed ? 'Otwarto wątek.' : 'Zamknięto wątek.');
+                    loadThread();
+                } catch (err) { msg(err.message); }
+            };
+        }
+
+        el.querySelectorAll('[data-edit-reply]').forEach(b => b.onclick = () => {
+            const replyId = b.dataset.editReply;
+            const replyEl = document.getElementById(`reply-${replyId}`);
+            const contentEl = replyEl.querySelector('.reply-content');
+            const oldText = contentEl.textContent;
+
+            replyEl.innerHTML = `
+        <form class="edit-reply-form">
+          <textarea required>${esc(oldText)}</textarea>
+          <div class="edit-form-actions">
+            <button type="submit" class="btn btn-sm">Zapisz</button>
+            <button type="button" class="btn ghost btn-sm btn-cancel">Anuluj</button>
+          </div>
+        </form>
+      `;
+
+            replyEl.querySelector('.btn-cancel').onclick = () => loadThread();
+            replyEl.querySelector('form').onsubmit = async (e) => {
+                e.preventDefault();
+                const newText = e.target.querySelector('textarea').value;
+                try {
+                    await api(`/api/forum/replies/${replyId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ content: newText })
+                    });
+                    msg('Zaktualizowano.');
+                    loadThread();
+                } catch (err) { msg(err.message); }
+            };
+        });
+
+        el.querySelectorAll('[data-like-reply]').forEach(b => b.onclick = async () => {
+            if (!token()) { location.href = '/login'; return; }
+            try { const d = await api('/api/forum/replies/' + b.dataset.likeReply + '/like', { method: 'POST' }); b.classList.toggle('liked', d.liked); b.querySelector('span').textContent = d.likes; } catch (e) { msg(e.message); }
+        });
+
+        const rf = document.getElementById('replyForm');
+        if (rf) {
+            rf.onsubmit = async e => {
+                e.preventDefault();
+                if (!token()) { location.href = '/login'; return; }
+                try {
+                    await api('/api/forum/' + id + '/replies', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(Object.fromEntries(new FormData(rf)))
+                    });
+                    await loadThread();
+                } catch (x) { msg(x.message); }
+            };
+        }
+
+    } catch (e) { el.textContent = e.message; }
 }
 
 async function loadProfile() {
