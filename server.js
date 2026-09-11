@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 CREATE TABLE IF NOT EXISTS posts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
+  user_id INTEGER,
   title TEXT NOT NULL,
   content TEXT NOT NULL,
   category TEXT NOT NULL DEFAULT 'Devlog',
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS posts (
 );
 CREATE TABLE IF NOT EXISTS forum_threads (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
+  user_id INTEGER,
   title TEXT NOT NULL,
   content TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'open',
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS forum_threads (
 CREATE TABLE IF NOT EXISTS forum_replies (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   thread_id INTEGER NOT NULL,
-  user_id INTEGER NOT NULL,
+  user_id INTEGER,
   content TEXT NOT NULL,
   is_update INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS reply_likes (
 );
 CREATE TABLE IF NOT EXISTS gallery_images (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER NOT NULL,
+  user_id INTEGER,
   title TEXT NOT NULL DEFAULT '',
   image_url TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -688,12 +688,26 @@ app.get('/api/admin/stats', auth, admin, (req, res) => {
 });
 
 
+//app.get('/api/gallery', (req, res) => {
+//    try {
+//        const images = db.prepare(`
+//            SELECT g.*, u.username AS author
+//            FROM gallery_images g
+//            JOIN users u ON u.id = g.user_id
+//            ORDER BY g.created_at DESC
+//        `).all();
+//        res.json(images);
+//    } catch (err) {
+//        res.status(500).json({ error: 'Błąd podczas pobierania zdjęć galerii' });
+//    }
+//});
+
 app.get('/api/gallery', (req, res) => {
     try {
         const images = db.prepare(`
-            SELECT g.*, u.username AS author 
+            SELECT g.*, COALESCE(u.username, 'Nieznany użytkownik') AS author 
             FROM gallery_images g 
-            JOIN users u ON u.id = g.user_id 
+            LEFT JOIN users u ON u.id = g.user_id 
             ORDER BY g.created_at DESC
         `).all();
         res.json(images);
