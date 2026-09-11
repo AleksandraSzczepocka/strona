@@ -78,7 +78,7 @@ Projekt korzysta z Express 5, dlatego fallback routingu używa składni `/{*spla
 
 ## Co jeszcze trzeba zrobić? (na ten moment)
 
-- [ ] Edycja treści devloga/postów forum
+- [x] Edycja treści devloga/postów forum
 - [ ] Recaptcha lub inne zabezpieczenie podczas rejestracji/logowania
 - [ ] Wypełnienie treści + poprawa frontendu (jeśli będzie czas można pobawić się z animowaniem i innymi ciekaawszymi wizualizacjami)
 - [ ] Testy użyteczności/funkcjonalności
