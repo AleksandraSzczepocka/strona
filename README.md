@@ -161,6 +161,6 @@ Projekt korzysta z Express 5, dlatego fallback routingu używa składni `/{*spla
 - [ ] Recaptcha lub inne zabezpieczenie podczas rejestracji/logowania
 - [ ] Wypełnienie treści + poprawa frontendu (jeśli będzie czas można pobawić się z animowaniem i innymi ciekaawszymi wizualizacjami)
 - [ ] Testy użyteczności/funkcjonalności
-- [ ] Ewentualne rozszerzenie zarządzania galerią (edycja tytułów, ustawianie alt)
+- [x] Ewentualne rozszerzenie zarządzania galerią (edycja tytułów, ustawianie alt)
 - [ ] Sprawdzenie pod względem dostępności (można zrobić przyciski np. do zwiększania czcionki lub innego motywu, autodeskrypcja?, text to speech?) - sprawdzenie WCAG
 
