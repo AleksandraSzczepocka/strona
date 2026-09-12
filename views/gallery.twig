@@ -29,7 +29,8 @@
     <section class="admin-panel" style="margin-bottom: 2rem;">
         <h2>DODAJ ZDJĘCIE DO GALERII</h2>
         <form id="galleryUploadForm" class="form-grid" enctype="multipart/form-data">
-            <input type="text" name="title" placeholder="Tytuł / Opis zdjęcia" required>
+            <input type="text" name="title" placeholder="Tytuł zdjęcia" required>
+            <input type="text" name="alt_text" placeholder="Opis alternatywny (alt) dla czytników..." required>
             <input type="file" name="image" accept="image/png,image/jpeg,image/webp,image/gif" required>
             <button class="btn" type="submit">Wgraj zdjęcie</button>
         </form>

@@ -104,46 +104,46 @@ async function loadPosts() {
                 if (ytMatch && ytMatch[1]) {
                     const videoId = ytMatch[1];
                     mediaHtml = `
-            <div class="post-media video-container">
-              <iframe src="https://www.youtube.com/embed/${videoId}" 
-                      frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                      allowfullscreen></iframe>
-            </div>`;
+                        <div class="post-media video-container">
+                          <iframe src="https://www.youtube.com/embed/${videoId}" 
+                                  frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                  allowfullscreen></iframe>
+                        </div>`;
                 }
                 else if (lowerUrl.match(/\.(mp4|webm|ogg)$/)) {
                     mediaHtml = `
-            <div class="post-media">
-              <video controls>
-                <source src="${esc(url)}">
-                Twoja przeglądarka nie wspiera odtwarzacza wideo.
-              </video>
-            </div>`;
+                        <div class="post-media">
+                          <video controls>
+                            <source src="${esc(url)}">
+                            Twoja przeglądarka nie wspiera odtwarzacza wideo.
+                          </video>
+                        </div>`;
                 }
                 else if (lowerUrl.match(/\.(mp3|wav|ogg)$/)) {
                     mediaHtml = `
-            <div class="post-media">
-              <audio controls>
-                <source src="${esc(url)}">
-              </audio>
-            </div>`;
+                        <div class="post-media">
+                          <audio controls>
+                            <source src="${esc(url)}">
+                          </audio>
+                        </div>`;
                 }
                 else if (lowerUrl.match(/\.(zip|rar|7z|tar|gz)$/)) {
                     mediaHtml = `
-            <div class="post-media file-attachment">
-              <a href="${esc(url)}" class="btn ghost" download>📦 Pobierz załącznik (${esc(url.split('/').pop())})</a>
-            </div>`;
+                        <div class="post-media file-attachment">
+                          <a href="${esc(url)}" class="btn ghost" download>📦 Pobierz załącznik (${esc(url.split('/').pop())})</a>
+                        </div>`;
                 }
                 else if (lowerUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/)) {
                     mediaHtml = `
-            <div class="post-media">
-              <img src="${esc(url)}" alt="Załącznik posta">
-            </div>`;
+                        <div class="post-media">
+                          <img src="${esc(url)}" alt="Załącznik graficzny do wpisu: ${esc(p.title)}">
+                        </div>`;
                 }
                 else {
                     mediaHtml = `
-            <div class="post-media">
-              <a href="${esc(url)}" target="_blank" rel="noopener noreferrer">🔗 Zobacz załącznik / odnośnik</a>
-            </div>`;
+                        <div class="post-media">
+                          <a href="${esc(url)}" target="_blank" rel="noopener noreferrer">🔗 Zobacz załącznik / odnośnik</a>
+                        </div>`;
                 }
             }
 
@@ -320,242 +320,6 @@ async function loadForum() {
 
     } catch (e) { el.textContent = e.message; }
 }
-
-//async function loadThread() {
-//    const el = document.getElementById('threadView');
-//    if (!el) return;
-//    const id = new URLSearchParams(location.search).get('thread');
-//    if (!id) { el.innerHTML = '<div class="empty">Wybierz temat z listy forum.</div>'; return; }
-
-//    try {
-//        const data = await api('/api/forum/' + id);
-//        const currentUser = token() ? await api('/api/me').catch(() => null) : null;
-//        const isAdmin = currentUser?.role === 'admin';
-//        const isThreadAuthor = currentUser && currentUser.id === data.thread.user_id;
-//        const isClosed = data.thread.status === 'closed';
-
-
-//        const threadCreatedAt = data.thread.created_at.endsWith('Z') ? data.thread.created_at : data.thread.created_at + 'Z';
-//        const threadMinutesPassed = (Date.now() - new Date(threadCreatedAt).getTime()) / (1000 * 60);
-//        //const threadMinutesPassed = (Date.now() - new Date(data.thread.created_at).getTime()) / (1000 * 60);
-//        const canEditThread = isAdmin || (isThreadAuthor && threadMinutesPassed <= 15);
-
-//        let authorControls = '';
-//        if (isThreadAuthor || isAdmin) {
-//            authorControls = `
-//        <div class="author-tools">
-//          <div class="author-tools-header">
-//            <span>Status wątku: <strong class="status-tag ${isClosed ? 'closed' : 'open'}">${isClosed ? 'ZAMKNIĘTY' : 'OTWARTY'}</strong></span>
-//            <div class="author-tools-actions">
-//              ${canEditThread ? '<button class="btn ghost btn-sm" id="editThreadBtn">Edytuj wątek</button>' : ''}
-//              <button class="btn ghost btn-sm" id="toggleUpdateFormBtn">Dodaj UPDATE do posta</button>
-//              <button class="btn ghost btn-sm" id="toggleStatusBtn">
-//                ${isClosed ? 'Otwórz wątek' : 'Zamknij wątek'}
-//              </button>
-//            </div>
-//          </div>
-
-//          <form id="editThreadForm" class="update-form hidden">
-//            <div class="form-group">
-//              <label><strong>Tytuł wątku:</strong></label>
-//              <input type="text" name="title" value="${esc(data.thread.title)}" required style="width:100%; margin-bottom:10px;">
-//            </div>
-//            <div class="form-group">
-//              <label><strong>Treść wątku:</strong></label>
-//              <textarea name="content" required style="width:100%; height:120px;">${esc(data.thread.content)}</textarea>
-//            </div>
-//            <div class="update-form-buttons">
-//              <button type="submit" class="btn btn-sm">Zapisz zmiany</button>
-//              <button type="button" class="btn ghost btn-sm" id="cancelEditThreadBtn">Anuluj</button>
-//            </div>
-//          </form>
-
-//          <form id="updateForm" class="update-form hidden">
-//            <label><strong>Treść aktualizacji (doklei się na dole głównego posta):</strong></label>
-//            <textarea name="content" placeholder="Wpisz treść aktualizacji..." required></textarea>
-//            <div class="update-form-buttons">
-//              <button type="submit" class="btn btn-sm">Doklej UPDATE</button>
-//              <button type="button" class="btn ghost btn-sm" id="cancelUpdateBtn">Anuluj</button>
-//            </div>
-//          </form>
-//        </div>
-//      `;
-//        }
-
-//        const formattedThreadContent = esc(data.thread.content).replace(
-//            (/--- UPDATE \((.*?)\) ---\n([\s\S]*?)(?=(--- UPDATE|$))/g),
-//            '<div class="thread-update-block"><div class="update-label">UPDATE ($1)</div>$2</div>'
-//        );
-
-//        const repliesHtml = data.replies.map(r => {
-//            const isReplyAuthor = currentUser && currentUser.id === r.user_id;
-//            const replyCreatedAt = r.created_at.endsWith('Z') ? r.created_at : r.created_at + 'Z';
-//            const minutesPassed = (Date.now() - new Date(replyCreatedAt).getTime()) / (1000 * 60);
-//            //const minutesPassed = (Date.now() - new Date(r.created_at).getTime()) / (1000 * 60);
-//            const canEdit = isAdmin || (isReplyAuthor && minutesPassed <= 15);
-
-//            return `
-//        <article class="reply" id="reply-${r.id}">
-//          <div class="reply-head">
-//            ${avatar({ avatar_url: r.avatar, username: r.author })}
-//            <div>
-//              <a class="profile-link" href="/profile?u=${encodeURIComponent(r.author)}">${esc(r.author)}</a>
-//              <small>${new Date(r.created_at).toLocaleString('pl-PL')}</small>
-//            </div>
-//          </div>
-//          <div class="reply-content">${esc(r.content)}</div>
-//          <div class="reply-actions">
-//            <button class="like-btn ${r.liked ? 'liked' : ''}" data-like-reply="${r.id}">♥ <span>${r.likes || 0}</span></button>
-//            ${canEdit ? `<button class="btn ghost btn-sm" data-edit-reply="${r.id}">Edytuj</button>` : ''}
-//          </div>
-//        </article>
-//      `;
-//        }).join('');
-
-//        el.innerHTML = `
-//      <article class="thread-full">
-//        <div class="eyebrow">TEMAT FORUM ${isClosed ? '• [ZAMKNIĘTY]' : ''}</div>
-//        <h2>${esc(data.thread.title)}</h2>
-//        <div class="thread-body">${formattedThreadContent}</div>
-//        <small>Autor: <a class="profile-link" href="/profile?u=${encodeURIComponent(data.thread.author)}">${esc(data.thread.author)}</a></small>
-//        ${authorControls}
-//      </article>
-
-//      <div class="replies">
-//        <h2>ODPOWIEDZI (${data.replies.length})</h2>
-//        ${repliesHtml}
-//      </div>
-
-//      <div class="new-thread">
-//        ${isClosed ? '<div class="thread-closed-msg">Ten wątek został zamknięty. Nie można dodawać nowych odpowiedzi.</div>' : `
-//          <h2>ODPOWIEDZ</h2>
-//          <form id="replyForm">
-//            <textarea name="content" placeholder="Napisz odpowiedź..." required></textarea>
-//            <button class="btn">Odpowiedz</button>
-//          </form>
-//        `}
-//      </div>
-//    `;
-
-//        const editThreadBtn = document.getElementById('editThreadBtn');
-//        const editThreadForm = document.getElementById('editThreadForm');
-//        const cancelEditThreadBtn = document.getElementById('cancelEditThreadBtn');
-
-//        if (editThreadBtn) {
-//            editThreadBtn.onclick = () => editThreadForm.classList.toggle('hidden');
-//            cancelEditThreadBtn.onclick = () => editThreadForm.classList.add('hidden');
-
-//            editThreadForm.onsubmit = async (e) => {
-//                e.preventDefault();
-//                const title = editThreadForm.querySelector('input[name="title"]').value;
-//                const content = editThreadForm.querySelector('textarea[name="content"]').value;
-
-//                try {
-//                    await api(`/api/forum/threads/${id}`, {
-//                        method: 'PUT',
-//                        headers: { 'Content-Type': 'application/json' },
-//                        body: JSON.stringify({ title, content })
-//                    });
-//                    msg('Wątek został zaktualizowany.');
-//                    loadThread();
-//                } catch (err) { msg(err.message); }
-//            };
-//        }
-
-//        const updateBtn = document.getElementById('toggleUpdateFormBtn');
-//        const updateForm = document.getElementById('updateForm');
-//        const cancelUpdateBtn = document.getElementById('cancelUpdateBtn');
-
-//        if (updateBtn) {
-//            updateBtn.onclick = () => updateForm.classList.toggle('hidden');
-//            cancelUpdateBtn.onclick = () => updateForm.classList.add('hidden');
-
-//            updateForm.onsubmit = async (e) => {
-//                e.preventDefault();
-//                const content = updateForm.querySelector('textarea').value;
-//                try {
-//                    await api(`/api/forum/threads/${id}/append-update`, {
-//                        method: 'POST',
-//                        headers: { 'Content-Type': 'application/json' },
-//                        body: JSON.stringify({ content })
-//                    });
-//                    msg('Doklejono aktualizację!');
-//                    loadThread();
-//                } catch (err) { msg(err.message); }
-//            };
-//        }
-
-//        const toggleStatusBtn = document.getElementById('toggleStatusBtn');
-//        if (toggleStatusBtn) {
-//            toggleStatusBtn.onclick = async () => {
-//                const newStatus = isClosed ? 'open' : 'closed';
-//                try {
-//                    await api(`/api/forum/threads/${id}/status`, {
-//                        method: 'POST',
-//                        headers: { 'Content-Type': 'application/json' },
-//                        body: JSON.stringify({ status: newStatus })
-//                    });
-//                    msg(isClosed ? 'Otwarto wątek.' : 'Zamknięto wątek.');
-//                    loadThread();
-//                } catch (err) { msg(err.message); }
-//            };
-//        }
-
-//        el.querySelectorAll('[data-edit-reply]').forEach(b => b.onclick = () => {
-//            const replyId = b.dataset.editReply;
-//            const replyEl = document.getElementById(`reply-${replyId}`);
-//            const contentEl = replyEl.querySelector('.reply-content');
-//            const oldText = contentEl.textContent;
-
-//            replyEl.innerHTML = `
-//        <form class="edit-reply-form">
-//          <textarea required>${esc(oldText)}</textarea>
-//          <div class="edit-form-actions">
-//            <button type="submit" class="btn btn-sm">Zapisz</button>
-//            <button type="button" class="btn ghost btn-sm btn-cancel">Anuluj</button>
-//          </div>
-//        </form>
-//      `;
-
-//            replyEl.querySelector('.btn-cancel').onclick = () => loadThread();
-//            replyEl.querySelector('form').onsubmit = async (e) => {
-//                e.preventDefault();
-//                const newText = e.target.querySelector('textarea').value;
-//                try {
-//                    await api(`/api/forum/replies/${replyId}`, {
-//                        method: 'PUT',
-//                        headers: { 'Content-Type': 'application/json' },
-//                        body: JSON.stringify({ content: newText })
-//                    });
-//                    msg('Zaktualizowano.');
-//                    loadThread();
-//                } catch (err) { msg(err.message); }
-//            };
-//        });
-
-//        el.querySelectorAll('[data-like-reply]').forEach(b => b.onclick = async () => {
-//            if (!token()) { location.href = '/login'; return; }
-//            try { const d = await api('/api/forum/replies/' + b.dataset.likeReply + '/like', { method: 'POST' }); b.classList.toggle('liked', d.liked); b.querySelector('span').textContent = d.likes; } catch (e) { msg(e.message); }
-//        });
-
-//        const rf = document.getElementById('replyForm');
-//        if (rf) {
-//            rf.onsubmit = async e => {
-//                e.preventDefault();
-//                if (!token()) { location.href = '/login'; return; }
-//                try {
-//                    await api('/api/forum/' + id + '/replies', {
-//                        method: 'POST',
-//                        headers: { 'Content-Type': 'application/json' },
-//                        body: JSON.stringify(Object.fromEntries(new FormData(rf)))
-//                    });
-//                    await loadThread();
-//                } catch (x) { msg(x.message); }
-//            };
-//        }
-
-//    } catch (e) { el.textContent = e.message; }
-//}
 
 async function loadThread() {
     const el = document.getElementById('threadView');
@@ -759,7 +523,7 @@ async function loadThread() {
             };
         }
 
-        // Edycja dowolnej odpowiedzi lub bloków UPDATE
+    
         el.querySelectorAll('[data-edit-reply]').forEach(b => b.onclick = () => {
             const replyId = b.dataset.editReply;
             const replyEl = document.getElementById(`reply-${replyId}`);
@@ -861,6 +625,57 @@ async function loadStats() {
 let galleryData = [];
 let currentImageIndex = 0;
 
+//async function loadGallery() {
+//    const grid = document.getElementById('galleryGrid');
+//    if (!grid) return;
+
+//    try {
+//        galleryData = await api('/api/gallery');
+//        const currentUser = token() ? await api('/api/me').catch(() => null) : null;
+//        const isAdmin = currentUser?.role === 'admin';
+
+//        if (!galleryData.length) {
+//            grid.innerHTML = '<div class="empty">Brak zdjęć w galerii.</div>';
+//            return;
+//        }
+
+//        grid.innerHTML = galleryData.map((img, idx) => `
+//            <div class="gallery-card" data-index="${idx}">
+//                <img src="${esc(img.image_url)}" alt="${esc(img.title)}" loading="lazy">
+//                <div class="card-info">
+//                    <span>${esc(img.title || 'Bez tytułu')}</span>
+//                    ${isAdmin ? `<button class="btn-delete-img" data-delete-id="${img.id}">Usuń</button>` : ''}
+//                </div>
+//            </div>
+//        `).join('');
+
+
+//        grid.querySelectorAll('.gallery-card').forEach(card => {
+//            card.addEventListener('click', (e) => {
+//                if (e.target.classList.contains('btn-delete-img')) return;
+//                openLightbox(parseInt(card.dataset.index, 10));
+//            });
+//        });
+
+
+//        grid.querySelectorAll('[data-delete-id]').forEach(btn => {
+//            btn.onclick = async (e) => {
+//                e.stopPropagation();
+//                if (!confirm('Czy na pewno chcesz usunąć to zdjęcie?')) return;
+//                try {
+//                    await api('/api/gallery/' + btn.dataset.deleteId, { method: 'DELETE' });
+//                    loadGallery();
+//                } catch (err) {
+//                    alert(err.message);
+//                }
+//            };
+//        });
+
+//    } catch (err) {
+//        grid.innerHTML = `<div class="empty">${esc(err.message)}</div>`;
+//    }
+//}
+
 async function loadGallery() {
     const grid = document.getElementById('galleryGrid');
     if (!grid) return;
@@ -876,36 +691,86 @@ async function loadGallery() {
         }
 
         grid.innerHTML = galleryData.map((img, idx) => `
-            <div class="gallery-card" data-index="${idx}">
-                <img src="${esc(img.image_url)}" alt="${esc(img.title)}" loading="lazy">
+            <div class="gallery-card" data-index="${idx}" data-id="${img.id}">
+                <img src="${esc(img.image_url)}" alt="${esc(img.alt_text || img.title || 'Zdjęcie w galerii')}" loading="lazy">
                 <div class="card-info">
-                    <span>${esc(img.title || 'Bez tytułu')}</span>
-                    ${isAdmin ? `<button class="btn-delete-img" data-delete-id="${img.id}">Usuń</button>` : ''}
+                    <span class="img-title">${esc(img.title || 'Bez tytułu')}</span>
+                    ${isAdmin ? `
+                        <div class="admin-gallery-actions">
+                            <button class="btn-edit-img btn ghost btn-sm" data-edit-id="${img.id}">Edytuj</button>
+                            <button class="btn-delete-img btn danger btn-sm" data-delete-id="${img.id}">Usuń</button>
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `).join('');
 
-     
         grid.querySelectorAll('.gallery-card').forEach(card => {
             card.addEventListener('click', (e) => {
-                if (e.target.classList.contains('btn-delete-img')) return;
+                if (e.target.closest('.admin-gallery-actions') || e.target.tagName === 'INPUT' || e.target.tagName === 'FORM') return;
                 openLightbox(parseInt(card.dataset.index, 10));
             });
         });
 
-        
-        grid.querySelectorAll('[data-delete-id]').forEach(btn => {
-            btn.onclick = async (e) => {
-                e.stopPropagation();
-                if (!confirm('Czy na pewno chcesz usunąć to zdjęcie?')) return;
-                try {
-                    await api('/api/gallery/' + btn.dataset.deleteId, { method: 'DELETE' });
-                    loadGallery();
-                } catch (err) {
-                    alert(err.message);
-                }
-            };
-        });
+        if (isAdmin) {
+            grid.querySelectorAll('[data-edit-id]').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const card = btn.closest('.gallery-card');
+                    const imgId = btn.dataset.editId;
+                    const item = galleryData.find(g => g.id == imgId);
+
+                    card.querySelector('.card-info').innerHTML = `
+                        <form class="edit-gallery-form" style="width:100%; display:flex; flex-direction:column; gap:5px; margin-top:5px;">
+                            <input type="text" name="title" value="${esc(item.title)}" placeholder="Tytuł" required style="font-size:12px; padding:4px;">
+                            <input type="text" name="alt_text" value="${esc(item.alt_text || '')}" placeholder="Opis alternatywny (alt)" required style="font-size:12px; padding:4px;">
+                            <div style="display:flex; gap:5px; margin-top:5px;">
+                                <button type="submit" class="btn btn-sm" style="padding:2px 6px;">Zapisz</button>
+                                <button type="button" class="btn ghost btn-sm btn-cancel-edit" style="padding:2px 6px;">Anuluj</button>
+                            </div>
+                        </form>
+                    `;
+
+                    card.querySelector('.btn-cancel-edit').onclick = (ev) => {
+                        ev.stopPropagation();
+                        loadGallery();
+                    };
+
+                    card.querySelector('form').onsubmit = async (ev) => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+                        const title = ev.target.title.value;
+                        const alt_text = ev.target.alt_text.value;
+
+                        try {
+                            await api(`/api/gallery/${imgId}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ title, alt_text })
+                            });
+                            msg('Zaktualizowano dane zdjęcia.');
+                            loadGallery();
+                        } catch (err) {
+                            msg(err.message);
+                        }
+                    };
+                };
+            });
+
+            grid.querySelectorAll('[data-delete-id]').forEach(btn => {
+                btn.onclick = async (e) => {
+                    e.stopPropagation();
+                    if (!confirm('Czy na pewno chcesz usunąć to zdjęcie?')) return;
+                    try {
+                        await api('/api/gallery/' + btn.dataset.deleteId, { method: 'DELETE' });
+                        msg('Zdjęcie usunięte.');
+                        loadGallery();
+                    } catch (err) {
+                        msg(err.message);
+                    }
+                };
+            });
+        }
 
     } catch (err) {
         grid.innerHTML = `<div class="empty">${esc(err.message)}</div>`;
@@ -923,6 +788,7 @@ function openLightbox(index) {
     const lbCaption = document.getElementById('lightboxCaption');
 
     lbImg.src = item.image_url;
+    lbImg.alt = item.alt_text || item.title || 'Powiększone zdjęcie z galerii';
     lbCaption.textContent = item.title ? `${item.title} (Autor: ${item.author})` : `Autor: ${item.author}`;
     lb.style.display = 'flex';
 }

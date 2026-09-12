@@ -97,6 +97,7 @@ CREATE TABLE IF NOT EXISTS gallery_images (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER,
   title TEXT NOT NULL DEFAULT '',
+  alt_text TEXT NOT NULL DEFAULT '',
   image_url TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -778,11 +779,15 @@ app.get('/api/gallery', (req, res) => {
     }
 });
 
+
+
 // Wgrywanie nowego zdjęcia do galerii (tylko ADMIN)
 app.post('/api/gallery', auth, admin, upload.single('image'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'Nie przesłano pliku obrazu' });
 
     const title = String(req.body.title || '').trim();
+    const altText = String(req.body.alt_text || '').trim();
+
     const ext = path.extname(req.file.originalname).toLowerCase() || '.jpg';
     const finalName = `gallery-${Date.now()}${ext}`;
     const finalPath = path.join(uploadDir, finalName);
@@ -792,16 +797,36 @@ app.post('/api/gallery', auth, admin, upload.single('image'), (req, res) => {
         const imageUrl = `/uploads/${finalName}`;
 
         const result = db.prepare(`
-            INSERT INTO gallery_images (user_id, title, image_url) 
-            VALUES (?, ?, ?)
-        `).run(req.user.id, title, imageUrl);
+            INSERT INTO gallery_images (user_id, title, alt_text, image_url) 
+            VALUES (?, ?, ?, ?)
+        `).run(req.user.id, title, altText, imageUrl);
 
-        res.status(201).json({ id: result.lastInsertRowid, image_url: imageUrl, title });
+        res.status(201).json({ id: result.lastInsertRowid, image_url: imageUrl, title, alt_text: altText });
     } catch (err) {
         if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
         res.status(500).json({ error: 'Błąd podczas zapisywania zdjęcia' });
     }
 });
+
+app.put('/api/gallery/:id', auth, admin, (req, res) => {
+    try {
+        const title = String(req.body.title || '').trim();
+        const altText = String(req.body.alt_text || '').trim();
+
+        const result = db.prepare(`
+            UPDATE gallery_images 
+            SET title = ?, alt_text = ? 
+            WHERE id = ?
+        `).run(title, altText, req.params.id);
+
+        if (result.changes === 0) return res.status(404).json({ error: 'Zdjęcie nie istnieje' });
+        res.json({ message: 'Zaktualizowano opis zdjęcia' });
+    } catch (err) {
+        res.status(500).json({ error: 'Błąd podczas aktualizacji zdjęcia' });
+    }
+});
+
+
 
 // Usuwanie zdjęcia z galerii (tylko ADMIN)
 app.delete('/api/gallery/:id', auth, admin, (req, res) => {
