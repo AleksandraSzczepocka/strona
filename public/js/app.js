@@ -904,6 +904,49 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+
+    const widgetHTML = `
+    <div class="a11y-widget">
+        <div class="a11y-panel" id="a11yPanel" role="region" aria-label="Opcje dostępności">
+            <button id="btnTheme">Jasny motyw</button>
+            <button id="btnTextSize">Powiększ tekst</button>
+            <button id="btnLinks">Podświetl linki</button>
+        </div>
+        <button id="a11yToggle" aria-expanded="false" aria-controls="a11yPanel" aria-label="Otwórz menu dostępności">
+             Dostępność
+        </button>
+    </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', widgetHTML);
+
+    const panel = document.getElementById('a11yPanel');
+    const toggleBtn = document.getElementById('a11yToggle');
+
+    toggleBtn.addEventListener('click', () => {
+        const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+        toggleBtn.setAttribute('aria-expanded', !isExpanded);
+        panel.classList.toggle('active');
+    });
+
+    if (localStorage.getItem('a11y_light') === 'true') document.documentElement.classList.add('light-theme');
+    if (localStorage.getItem('a11y_text') === 'true') document.documentElement.classList.add('large-text');
+    if (localStorage.getItem('a11y_links') === 'true') document.documentElement.classList.add('highlight-links');
+
+    document.getElementById('btnTheme').addEventListener('click', () => {
+        const active = document.documentElement.classList.toggle('light-theme');
+        localStorage.setItem('a11y_light', active);
+    });
+
+    document.getElementById('btnTextSize').addEventListener('click', () => {
+        const active = document.documentElement.classList.toggle('large-text');
+        localStorage.setItem('a11y_text', active);
+    });
+
+    document.getElementById('btnLinks').addEventListener('click', () => {
+        const active = document.documentElement.classList.toggle('highlight-links');
+        localStorage.setItem('a11y_links', active);
+    });
+
     loadCurrentUser();
 
     const lf = document.getElementById('loginForm');
@@ -957,15 +1000,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (x) { msg(x.message); }
     });
 
-  //const lf=document.getElementById('loginForm');
-  //if(lf) lf.addEventListener('submit',async e=>{e.preventDefault();try{const d=await api('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(lf)))});localStorage.setItem('mh_token',d.token);location.href=d.user.role==='admin'?'/admin':'/profile'}catch(x){msg(x.message)}});
-  //const rf=document.getElementById('registerForm');
-  //if(rf) rf.addEventListener('submit',async e=>{e.preventDefault();try{await api('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(rf)))});location.href='/login'}catch(x){msg(x.message)}});
   const tf=document.getElementById('threadForm');
   if(tf) tf.addEventListener('submit',async e=>{e.preventDefault();if(!token()){location.href='/login';return}try{await api('/api/forum',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(tf)))});tf.reset();loadForum()}catch(x){msg(x.message)}});
-  //const pf=document.getElementById('postForm');
-    //if(pf) pf.addEventListener('submit',async e=>{e.preventDefault();try{await api('/api/posts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(pf)))});pf.reset();msg('Wpis został dodany.')}catch(x){msg(x.message)}});
-
 
     const pf = document.getElementById('postForm');
     if (pf) {
@@ -988,6 +1024,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+
     loadPosts(); loadForum(); loadThread(); loadProfile(); loadStats(); loadAdminUsers(); if (typeof lucide !== 'undefined') {
         lucide.createIcons();
     } setupPasswordToggles();

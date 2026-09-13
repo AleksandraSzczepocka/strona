@@ -30,3 +30,153 @@ a {
     color: var(--green);
     margin-top: 30px
 }
+
+
+
+
+.a11y-widget {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+}
+
+#a11yToggle {
+    text-transform:uppercase;
+    background: #2563eb;
+    color: #ffffff;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+#a11yToggle:hover {
+    background: #1d4ed8;
+    transform: translateY(-2px);
+}
+
+.a11y-panel {
+    display: none;
+    position: absolute;
+    bottom: 60px;
+    right: 0;
+    width: 220px;
+    background: rgba(22, 27, 34, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 12px;
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    flex-direction: column;
+    gap: 8px;
+}
+
+.a11y-panel.active {
+    display: flex;
+    animation: fadeIn 0.2s ease-out forwards;
+}
+
+.a11y-panel button {
+    background: rgba(255, 255, 255, 0.05);
+    color: #f3f4f6;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+}
+
+.a11y-panel button:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Style dla jasnego motywu w panelu */
+
+html.light-theme .a11y-panel {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.1);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+html.light-theme .a11y-panel button {
+    background: rgba(0, 0, 0, 0.04);
+    color: #1f2937;
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+html.light-theme .a11y-panel button:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: #000000;
+}
+
+/*Jasny motyw (nadpisuje czarne tło i ciemne elementy) */
+
+html.light-theme {
+    background-color: #f4f4f6 !important;
+    color: #1a1a1a !important;
+
+    body, main, div, article, section, form, header, footer, .post-card, .thread, .reply, .profile-head {
+        background-color: #ffffff !important;
+        color: #1a1a1a !important;
+        border-color: #dddddd !important;
+    }
+
+    a {
+        color: #0056b3 !important;
+    }
+
+    button, .btn {
+        background-color: #f5f5f5 !important;
+        color: #111 !important;
+        border: 1px solid #ddd !important;
+
+        &:hover {
+            background-color: #ddd !important;
+        }
+    }
+
+    .section h2 {
+        text-shadow: none;
+    }
+}
+
+html.large-text {
+    font-size: 125% !important;
+}
+
+html.highlight-links a {
+    outline: 3px solid #ff0055 !important;
+    outline-offset: 2px !important;
+    text-decoration: underline !important;
+    font-weight: bold !important;
+}
