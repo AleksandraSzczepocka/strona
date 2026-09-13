@@ -14,6 +14,30 @@
 </head>
 <body class="{% block body_class %}{% endblock %}">
 
+    <div id="loading-screen">
+        <div class="loading-content">
+
+            <div class="loading-title">
+                MIMICRY <span>EXPERIMENTS</span>
+            </div>
+
+            <div class="loading-subtitle">
+                ŁADOWANIE
+            </div>
+
+            <div class="loading-bar">
+                <div id="loading-progress"></div>
+            </div>
+
+            <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+
+        </div>
+    </div>
+
     {% block header %}
     <header>
         <a class="logo" href="/">MIMICRY<span> EXPERIMENTS</span></a>

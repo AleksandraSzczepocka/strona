@@ -1058,6 +1058,46 @@ function closeLightbox() {
     if (lb) lb.style.display = 'none';
 }
 
+// ========================================
+// LOADING SCREEN
+// ========================================
+
+document.addEventListener("DOMContentLoaded", () => {
+    const loadingScreen = document.getElementById("loading-screen");
+    const progress = document.getElementById("loading-progress");
+
+    if (!loadingScreen || !progress) return;
+
+    let currentProgress = 0;
+
+    const loadingInterval = setInterval(() => {
+        if (currentProgress < 90) {
+            currentProgress += Math.random() * 8;
+
+            if (currentProgress > 90) {
+                currentProgress = 90;
+            }
+
+            progress.style.width = `${currentProgress}%`;
+        }
+    }, 150);
+
+    window.addEventListener("load", () => {
+        clearInterval(loadingInterval);
+
+        progress.style.width = "100%";
+
+        setTimeout(() => {
+            loadingScreen.classList.add("hidden");
+
+            setTimeout(() => {
+                loadingScreen.remove();
+            }, 600);
+
+        }, 300);
+    });
+});
+
 function setupGalleryEvents() {
     
     const form = document.getElementById('galleryUploadForm');
