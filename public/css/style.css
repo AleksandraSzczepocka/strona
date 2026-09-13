@@ -4,7 +4,7 @@
   /* Surowe, oldschoolowe RGB */
   --black: #050505; /* Czysta czerń zamiast wchodzącej w brąz */
   --white: #e0e0e0;
-  --muted: #777777; /* Czysta, wyprana szarość */
+  --muted: #c6c6c6; /* Czysta, wyprana szarość */
   --line: #e4e4e4;
   --red: #cd0000;
   --green: #00aa29;
@@ -225,6 +225,22 @@ header nav a:hover, header nav a.active {
   margin: 10px 0;
 }
 
+.forum-style {
+  padding: 80px 25px 110px;
+  background: url("/siatka2.svg") no-repeat 30% -22%;
+  background-size: 120%;
+}
+
+.forum-content {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.forum-content h1 {
+  font-size: 65px;
+  letter-spacing: -4px;
+  margin: 10px 0;
+}
+
 .gallery-page {
   position: relative;
 }
@@ -360,6 +376,14 @@ header nav a:hover, header nav a.active {
 .cards p {
   color: var(--muted);
   font-size: 13px;
+}
+
+.cards img {
+  display: block;
+  margin: 0 auto;
+  width: 250px;
+  height: auto;
+  object-fit: contain;
 }
 
 .dark {
@@ -729,6 +753,7 @@ textarea {
   display: grid;
   grid-template-columns: 1fr 90px;
   gap: 20px;
+  background-color: #0d0f0d;
 }
 .thread:last-child {
   border: 0;
@@ -1340,6 +1365,7 @@ textarea {
   border: 1px dashed var(--line);
   padding: 25px;
   color: var(--muted);
+  background: #0d0f0d;
 }
 
 .profile-link {
