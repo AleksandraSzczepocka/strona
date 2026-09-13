@@ -17,7 +17,9 @@ const registerSchema = z.object({
         .regex(/[A-Z]/, { message: 'Hasło musi zawierać przynajmniej jedną wielką literę' })
         .regex(/[a-z]/, { message: 'Hasło musi zawierać przynajmniej jedną małą literę' })
         .regex(/[0-9]/, { message: 'Hasło musi zawierać przynajmniej jedną cyfrę' })
-        .regex(/[^a-zA-Z0-9]/, { message: 'Hasło musi zawierać przynajmniej jeden znak specjalny' })
+        .regex(/[^a-zA-Z0-9]/, { message: 'Hasło musi zawierać przynajmniej jeden znak specjalny' }),
+
+    altcha: z.string().min(1, { message: 'Weryfikacja antybotowa jest wymagana' })
 });
 
 const postSchema = z.object({

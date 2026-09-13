@@ -235,22 +235,88 @@ app.get('/logout', (req, res) => {
 
 
 
-app.post('/api/auth/register', validate(registerSchema), (req, res) => {
-    const { username, email, password } = req.body;
+
+//captcha
+
+const { createChallenge, verifySolution } = require('altcha-lib');
+const { deriveKey } = require('altcha-lib/algorithms/pbkdf2');
+
+const HMAC_SECRET = process.env.ALTCHA_HMAC_SECRET || 'super-tajny-klucz-1';
+
+app.get('/api/altcha-challenge', async (req, res) => {
+    try {
+        const challenge = await createChallenge({
+            algorithm: 'PBKDF2/SHA-256',
+            cost: 5000,
+            deriveKey,
+            hmacSignatureSecret: HMAC_SECRET
+        });
+
+        //console.log('ALTCHA challenge:', challenge);
+
+        res.json(challenge);
+    } catch (err) {
+        console.error('Błąd Altcha:', err);
+        res.status(500).json({
+            error: 'Nie udało się wygenerować wyzwania Altcha'
+        });
+    }
+});
+
+// Funkcja pomocnicza do weryfikacji formularza
+async function verifyAltchaPayload(payload) {
+    if (!payload) return false;
+
+    try {
+        let data = payload;
+
+        if (typeof payload === 'string') {
+            data = JSON.parse(
+                Buffer.from(payload, 'base64').toString('utf8')
+            );
+        }
+
+        const result = await verifySolution({
+            challenge: data.challenge,
+            solution: data.solution,
+            deriveKey,
+            hmacSignatureSecret: HMAC_SECRET
+        });
+
+        return result.verified === true;
+    } catch (err) {
+        console.error('Błąd weryfikacji Altcha:', err);
+        return false;
+    }
+}
+
+app.post('/api/auth/register', validate(registerSchema), async (req, res) => {
+    const { username, email, password, altcha } = req.body;
+
+    const isVerified = await verifyAltchaPayload(altcha);
+    if (!isVerified) {
+        return res.status(400).json({ error: 'Nieprawidłowa lub wygasła weryfikacja Altcha.' });
+    }
 
     try {
         const hash = bcrypt.hashSync(password, 10);
         const result = db.prepare('INSERT INTO users(username,email,password_hash) VALUES(?,?,?)').run(username, email, hash);
-        res.status(201).json({ id: result.lastInsertRowid, message: 'Konto utworzone' });
-    } catch {
+        res.status(201).json({ id: result.lastInsertRowid, message: 'Konto utworzone pomyślnie!' });
+    } catch (err) {
         res.status(409).json({ error: 'Nazwa użytkownika lub e-mail jest już zajęty' });
     }
 });
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
     try {
+        const { altcha } = req.body;
         const email = String(req.body.email || '').trim().toLowerCase();
         const password = String(req.body.password || '').trim();
+
+        const isVerified = await verifyAltchaPayload(altcha);
+        if (!isVerified) {
+            return res.status(400).json({ error: 'Nieprawidłowa weryfikacja antybotowa.' });
+        }
 
         const user = stmtGetUserByEmail.get(email);
 
@@ -266,7 +332,6 @@ app.post('/api/auth/login', (req, res) => {
         return res.status(500).json({ error: 'Błąd serwera podczas logowania' });
     }
 });
-
 
 
 

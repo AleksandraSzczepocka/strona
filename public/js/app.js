@@ -625,57 +625,6 @@ async function loadStats() {
 let galleryData = [];
 let currentImageIndex = 0;
 
-//async function loadGallery() {
-//    const grid = document.getElementById('galleryGrid');
-//    if (!grid) return;
-
-//    try {
-//        galleryData = await api('/api/gallery');
-//        const currentUser = token() ? await api('/api/me').catch(() => null) : null;
-//        const isAdmin = currentUser?.role === 'admin';
-
-//        if (!galleryData.length) {
-//            grid.innerHTML = '<div class="empty">Brak zdjęć w galerii.</div>';
-//            return;
-//        }
-
-//        grid.innerHTML = galleryData.map((img, idx) => `
-//            <div class="gallery-card" data-index="${idx}">
-//                <img src="${esc(img.image_url)}" alt="${esc(img.title)}" loading="lazy">
-//                <div class="card-info">
-//                    <span>${esc(img.title || 'Bez tytułu')}</span>
-//                    ${isAdmin ? `<button class="btn-delete-img" data-delete-id="${img.id}">Usuń</button>` : ''}
-//                </div>
-//            </div>
-//        `).join('');
-
-
-//        grid.querySelectorAll('.gallery-card').forEach(card => {
-//            card.addEventListener('click', (e) => {
-//                if (e.target.classList.contains('btn-delete-img')) return;
-//                openLightbox(parseInt(card.dataset.index, 10));
-//            });
-//        });
-
-
-//        grid.querySelectorAll('[data-delete-id]').forEach(btn => {
-//            btn.onclick = async (e) => {
-//                e.stopPropagation();
-//                if (!confirm('Czy na pewno chcesz usunąć to zdjęcie?')) return;
-//                try {
-//                    await api('/api/gallery/' + btn.dataset.deleteId, { method: 'DELETE' });
-//                    loadGallery();
-//                } catch (err) {
-//                    alert(err.message);
-//                }
-//            };
-//        });
-
-//    } catch (err) {
-//        grid.innerHTML = `<div class="empty">${esc(err.message)}</div>`;
-//    }
-//}
-
 async function loadGallery() {
     const grid = document.getElementById('galleryGrid');
     if (!grid) return;
@@ -953,12 +902,65 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             logout();
         }
-   });
-  loadCurrentUser();
-  const lf=document.getElementById('loginForm');
-  if(lf) lf.addEventListener('submit',async e=>{e.preventDefault();try{const d=await api('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(lf)))});localStorage.setItem('mh_token',d.token);location.href=d.user.role==='admin'?'/admin':'/profile'}catch(x){msg(x.message)}});
-  const rf=document.getElementById('registerForm');
-  if(rf) rf.addEventListener('submit',async e=>{e.preventDefault();try{await api('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(rf)))});location.href='/login'}catch(x){msg(x.message)}});
+    });
+
+    loadCurrentUser();
+
+    const lf = document.getElementById('loginForm');
+    if (lf) lf.addEventListener('submit', async e => {
+        e.preventDefault();
+        const formData = new FormData(lf);
+        const data = Object.fromEntries(formData);
+
+        if (typeof data.altcha === 'object') {
+            data.altcha = JSON.stringify(data.altcha);
+        }
+
+        if (!data.altcha) {
+            msg('Proszę ukończyć weryfikację antybotową (Altcha).');
+            return;
+        }
+
+        try {
+            const d = await api('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            localStorage.setItem('mh_token', d.token);
+            location.href = d.user.role === 'admin' ? '/admin' : '/profile';
+        } catch (x) { msg(x.message); }
+    });
+
+    const rf = document.getElementById('registerForm');
+    if (rf) rf.addEventListener('submit', async e => {
+        e.preventDefault();
+        const formData = new FormData(rf);
+        const data = Object.fromEntries(formData);
+
+        if (typeof data.altcha === 'object') {
+            data.altcha = JSON.stringify(data.altcha);
+        }
+
+        if (!data.altcha) {
+            msg('Proszę ukończyć weryfikację antybotową (Altcha).');
+            return;
+        }
+
+        try {
+            await api('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            location.href = '/login';
+        } catch (x) { msg(x.message); }
+    });
+
+  //const lf=document.getElementById('loginForm');
+  //if(lf) lf.addEventListener('submit',async e=>{e.preventDefault();try{const d=await api('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(lf)))});localStorage.setItem('mh_token',d.token);location.href=d.user.role==='admin'?'/admin':'/profile'}catch(x){msg(x.message)}});
+  //const rf=document.getElementById('registerForm');
+  //if(rf) rf.addEventListener('submit',async e=>{e.preventDefault();try{await api('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(rf)))});location.href='/login'}catch(x){msg(x.message)}});
   const tf=document.getElementById('threadForm');
   if(tf) tf.addEventListener('submit',async e=>{e.preventDefault();if(!token()){location.href='/login';return}try{await api('/api/forum',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(tf)))});tf.reset();loadForum()}catch(x){msg(x.message)}});
   //const pf=document.getElementById('postForm');

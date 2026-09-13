@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "mimcry-hunters-portal",
   "version": "1.0.0",
   "description": "Full-stack prototype for Mimcry Hunters",
@@ -11,6 +11,7 @@
     "dev": "concurrently \"npm run dev:node\" \"npm run watch:css\""
   },
   "dependencies": {
+    "altcha-lib": "^2.5.0",
     "bcryptjs": "^3.0.2",
     "better-sqlite3": "^13.0.3",
     "cookie-parser": "^1.4.7",
