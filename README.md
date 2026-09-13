@@ -157,10 +157,10 @@ Projekt korzysta z Express 5, dlatego fallback routingu używa składni `/{*spla
 
 ## Co jeszcze trzeba zrobić? (na ten moment)
 
-- [x] Edycja treści devloga/postów forum
-- [ ] Recaptcha lub inne zabezpieczenie podczas rejestracji/logowania
+$${\color{red}- [x] Edycja treści devloga/postów forum}$$
+$${\color{red}- [x] Recaptcha lub inne zabezpieczenie podczas rejestracji/logowania}$$
 - [ ] Wypełnienie treści + poprawa frontendu (jeśli będzie czas można pobawić się z animowaniem i innymi ciekaawszymi wizualizacjami)
 - [ ] Testy użyteczności/funkcjonalności
-- [x] Ewentualne rozszerzenie zarządzania galerią (edycja tytułów, ustawianie alt)
+$${\color{red}- [x] Ewentualne rozszerzenie zarządzania galerią (edycja tytułów, ustawianie alt)}$$
 - [ ] Sprawdzenie pod względem dostępności (można zrobić przyciski np. do zwiększania czcionki lub innego motywu, autodeskrypcja?, text to speech?) - sprawdzenie WCAG
 
