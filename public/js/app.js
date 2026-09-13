@@ -892,7 +892,47 @@ function setupPasswordToggles() {
     });
 }
 
+let isReadOnHoverActive = false; // Stan włącznika
 
+// 1. Główna funkcja czytająca podany tekst
+function speakText(text) {
+    if (!('speechSynthesis' in window) || !text.trim()) return;
+
+    window.speechSynthesis.cancel(); // Przerywamy poprzednie czytanie
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'pl-PL';
+    utterance.rate = 1.1; // Lekko przyspieszony temp, żeby nie męczyć użytkownika
+
+    window.speechSynthesis.speak(utterance);
+}
+
+// 2. Nasłuchiwanie najechania myszką na elementy
+document.addEventListener('mouseover', (e) => {
+    if (!isReadOnHoverActive) return;
+
+    // Pobieramy element pod kursorem
+    const target = e.target;
+
+    // Filtrujemy tylko elementy zawierające bezpośrednio tekst (żeby nie czytać całego body naraz)
+    const validTags = ['P', 'H1', 'H2', 'H3', 'H4', 'SPAN', 'A', 'BUTTON', 'LI', 'LABEL'];
+
+    if (validTags.includes(target.tagName) && target.innerText) {
+        // Czytamy tylko tekst z najechanego elementu
+        speakText(target.innerText);
+    }
+});
+
+// 3. Funkcja do włączania / wyłączania trybu (np. pod przycisk w Waszym toolbarze WCAG)
+function toggleReadOnHover() {
+    isReadOnHoverActive = !isReadOnHoverActive;
+
+    if (!isReadOnHoverActive) {
+        window.speechSynthesis.cancel(); // Wyłączamy lektora po wyłączeniu trybu
+    }
+
+    alert(isReadOnHoverActive ? 'Tryb czytania pod kursor został włączony' : 'Tryb czytania wyłączony');
+}
 
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -911,6 +951,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <button id="btnTheme">Jasny motyw</button>
             <button id="btnTextSize">Powiększ tekst</button>
             <button id="btnLinks">Podświetl linki</button>
+            <button onclick="toggleReadOnHover()">Czytaj pod kursorem (WŁ/WYŁ)</button>
         </div>
         <button id="a11yToggle" aria-expanded="false" aria-controls="a11yPanel" aria-label="Otwórz menu dostępności">
              Dostępność
