@@ -581,32 +581,343 @@ async function loadThread() {
 }
 
 async function loadProfile() {
-  const el = document.getElementById('profile');
-  if (!el) return;
-  try {
-    const username = new URLSearchParams(location.search).get('u');
-    const data = await api('/api/profile/' + encodeURIComponent(username || (await api('/api/me')).username));
-    const u = data.user;
-    const own = token() && (await api('/api/me')).id === u.id;
-    el.innerHTML = `<section class="profile-head"><div>${avatar(u, 'avatar-xl')}</div><div><div class="eyebrow">${u.role === 'admin' ? 'ADMINISTRATOR' : 'CZŁONEK SPOŁECZNOŚCI'}</div><h1>${esc(u.username)}</h1><p class="profile-bio">${esc(u.bio || 'Brak opisu profilu.')}</p><div class="profile-meta"><span>Dołączył: ${new Date(u.created_at).toLocaleDateString('pl-PL')}</span><span>${u.role === 'admin' ? 'Konto administratora' : 'Użytkownik'}</span></div></div></section>
-      ${own ? `<section class="profile-edit"><h2>EDYTUJ PROFIL</h2><form id="profileForm"><div class="form-grid"><input name="username" value="${esc(u.username)}" minlength="3" placeholder="Nazwa użytkownika" required><input name="email" type="email" value="${esc(u.email)}" placeholder="E-mail" required></div><textarea name="bio" maxlength="500" placeholder="Krótki opis">${esc(u.bio)}</textarea><button class="btn">Zapisz profil</button></form><form id="avatarForm" class="avatar-form"><label>PROFILÓWKA <input type="file" name="avatar" accept="image/png,image/jpeg,image/webp,image/gif" required></label><button class="btn ghost">Zmień zdjęcie</button></form><div id="profileMessage"></div></section>` : ''}
-      <section class="profile-section"><div class="section-title"><div><div class="eyebrow">AKTYWNOŚĆ</div><h2>POSTY UŻYTKOWNIKA</h2></div><span class="count">${data.posts.length}</span></div>${renderProfilePosts(data.posts)}</section>
-      <section class="profile-section"><div class="section-title"><div><div class="eyebrow">AKTYWNOŚĆ</div><h2>ODPOWIEDZI</h2></div><span class="count">${data.replies.length}</span></div>${data.replies.length ? data.replies.map(r => `<article class="profile-item"><small>W temacie: <a href="/forum?thread=${r.thread_id}">${esc(r.thread_title)}</a></small><p>${esc(r.content)}</p><button class="like-btn ${r.liked ? 'liked' : ''}" data-like-reply="${r.id}">♥ ${r.likes || 0}</button></article>`).join('') : '<div class="empty">Brak odpowiedzi.</div>'}</section>
-      <section class="profile-section"><div class="section-title"><div><div class="eyebrow">SPOŁECZNOŚĆ</div><h2>POLUBIONE</h2></div><span class="count">${data.likedPosts.length + data.likedReplies.length}</span></div><h3 class="subheading">POLUBIONE POSTY</h3>${renderLikedPosts(data.likedPosts)}<h3 class="subheading">POLUBIONE ODPOWIEDZI</h3>${data.likedReplies.length ? data.likedReplies.map(r => `<article class="profile-item"><small>${esc(r.author)} · <a href="/forum?thread=${r.thread_id}">${esc(r.thread_title)}</a></small><p>${esc(r.content)}</p></article>`).join('') : '<div class="empty">Brak polubionych odpowiedzi.</div>'}</section>`;
+    const el = document.getElementById('profile');
+    if (!el) return;
 
-    el.querySelectorAll('[data-like-reply]').forEach(b => b.onclick = async () => {
-      if (!token()) { location.href='/login'; return; }
-      const d = await api('/api/forum/replies/' + b.dataset.likeReply + '/like', {method:'POST'}); b.classList.toggle('liked', d.liked); b.textContent = `♥ ${d.likes}`;
-    });
-    el.querySelectorAll('[data-like-post]').forEach(b => b.onclick = async () => {
-      if (!token()) { location.href='/login'; return; }
-      const d = await api('/api/posts/' + b.dataset.likePost + '/like', {method:'POST'}); b.classList.toggle('liked', d.liked); b.textContent = `♥ ${d.likes}`;
-    });
-    const pf = document.getElementById('profileForm');
-    if (pf) pf.onsubmit = async e => { e.preventDefault(); try { const d = await api('/api/me/profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(pf)))}); localStorage.setItem('mh_token',d.token); msgProfile('Profil zapisany.'); setTimeout(()=>location.reload(),400); } catch(x) { msgProfile(x.message); } };
-    const af = document.getElementById('avatarForm');
-    if (af) af.onsubmit = async e => { e.preventDefault(); try { const d=await api('/api/profile/avatar',{method:'POST',body:new FormData(af)}); msgProfile('Profilówka została zmieniona.'); setTimeout(()=>location.reload(),400); } catch(x){msgProfile(x.message);} };
-  } catch (e) { el.textContent = e.message; }
+    try {
+        const username = new URLSearchParams(location.search).get('u');
+
+        const currentUser = await api('/api/me').catch(() => null);
+
+        const data = await api(
+            '/api/profile/' +
+            encodeURIComponent(username || currentUser.username)
+        );
+
+        const u = data.user;
+
+        const own = currentUser && currentUser.id === u.id;
+
+        const verificationStatus = u.email_verified
+            ? '<span class="email-status verified">✓ E-mail zweryfikowany</span>'
+            : '<span class="email-status not-verified">✗ E-mail niezweryfikowany</span>';
+
+        el.innerHTML = `
+      <section class="profile-head">
+        <div>
+          ${avatar(u, 'avatar-xl')}
+        </div>
+
+        <div>
+          <div class="eyebrow">
+            ${u.role === 'admin'
+            ? 'ADMINISTRATOR'
+            : 'CZŁONEK SPOŁECZNOŚCI'}
+          </div>
+
+          <h1>${esc(u.username)}</h1>
+
+          <p class="profile-bio">
+            ${esc(u.bio || 'Brak opisu profilu.')}
+          </p>
+
+          <div class="profile-meta">
+            <span>
+              Dołączył:
+              ${new Date(u.created_at).toLocaleDateString('pl-PL')}
+            </span>
+
+            <span>
+              ${u.role === 'admin'
+            ? 'Konto administratora'
+            : 'Użytkownik'}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      ${own ? `
+        <section class="profile-edit">
+          <h2>EDYTUJ PROFIL</h2>
+
+          <div class="email-verification-status">
+            <strong>Weryfikacja adresu e-mail:</strong>
+            ${verificationStatus}
+
+            ${!u.email_verified ? `
+              <button
+                type="button"
+                class="btn ghost"
+                id="resendVerification"
+              >
+                Wyślij ponownie mail weryfikacyjny
+              </button>
+            ` : ''}
+          </div>
+
+          <form id="profileForm">
+            <div class="form-grid">
+
+              <input
+                name="username"
+                value="${esc(u.username)}"
+                minlength="3"
+                placeholder="Nazwa użytkownika"
+                required
+              >
+
+              <input
+                name="email"
+                type="email"
+                value="${esc(u.email)}"
+                placeholder="E-mail"
+                required
+              >
+
+            </div>
+
+            <textarea
+              name="bio"
+              maxlength="500"
+              placeholder="Krótki opis"
+            >${esc(u.bio)}</textarea>
+
+            <button class="btn">
+              Zapisz profil
+            </button>
+          </form>
+
+          <form id="avatarForm" class="avatar-form">
+            <label>
+              PROFILÓWKA
+              <input
+                type="file"
+                name="avatar"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                required
+              >
+            </label>
+
+            <button class="btn ghost">
+              Zmień zdjęcie
+            </button>
+          </form>
+
+          <div id="profileMessage"></div>
+        </section>
+      ` : ''}
+
+      <section class="profile-section">
+        <div class="section-title">
+          <div>
+            <div class="eyebrow">AKTYWNOŚĆ</div>
+            <h2>POSTY UŻYTKOWNIKA</h2>
+          </div>
+
+          <span class="count">${data.posts.length}</span>
+        </div>
+
+        ${renderProfilePosts(data.posts)}
+      </section>
+
+      <section class="profile-section">
+        <div class="section-title">
+          <div>
+            <div class="eyebrow">AKTYWNOŚĆ</div>
+            <h2>ODPOWIEDZI</h2>
+          </div>
+
+          <span class="count">${data.replies.length}</span>
+        </div>
+
+        ${
+            data.replies.length
+                ? data.replies.map(r => `
+                <article class="profile-item">
+                  <small>
+                    W temacie:
+                    <a href="/forum?thread=${r.thread_id}">
+                      ${esc(r.thread_title)}
+                    </a>
+                  </small>
+
+                  <p>${esc(r.content)}</p>
+
+                  <button
+                    class="like-btn ${r.liked ? 'liked' : ''}"
+                    data-like-reply="${r.id}"
+                  >
+                    ♥ ${r.likes || 0}
+                  </button>
+                </article>
+              `).join('')
+                : '<div class="empty">Brak odpowiedzi.</div>'
+        }
+      </section>
+
+      <section class="profile-section">
+        <div class="section-title">
+          <div>
+            <div class="eyebrow">SPOŁECZNOŚĆ</div>
+            <h2>POLUBIONE</h2>
+          </div>
+
+          <span class="count">
+            ${data.likedPosts.length + data.likedReplies.length}
+          </span>
+        </div>
+
+        <h3 class="subheading">POLUBIONE POSTY</h3>
+
+        ${renderLikedPosts(data.likedPosts)}
+
+        <h3 class="subheading">POLUBIONE ODPOWIEDZI</h3>
+
+        ${
+            data.likedReplies.length
+                ? data.likedReplies.map(r => `
+                <article class="profile-item">
+                  <small>
+                    ${esc(r.author)} ·
+                    <a href="/forum?thread=${r.thread_id}">
+                      ${esc(r.thread_title)}
+                    </a>
+                  </small>
+
+                  <p>${esc(r.content)}</p>
+                </article>
+              `).join('')
+                : '<div class="empty">Brak polubionych odpowiedzi.</div>'
+        }
+      </section>
+    `;
+
+        // Polubienia odpowiedzi
+        el.querySelectorAll('[data-like-reply]').forEach(b => {
+            b.onclick = async () => {
+                if (!token()) {
+                    location.href = '/login';
+                    return;
+                }
+
+                const d = await api(
+                    '/api/forum/replies/' + b.dataset.likeReply + '/like',
+                    { method: 'POST' }
+                );
+
+                b.classList.toggle('liked', d.liked);
+                b.textContent = `♥ ${d.likes}`;
+            };
+        });
+
+        // Polubienia postów
+        el.querySelectorAll('[data-like-post]').forEach(b => {
+            b.onclick = async () => {
+                if (!token()) {
+                    location.href = '/login';
+                    return;
+                }
+
+                const d = await api(
+                    '/api/posts/' + b.dataset.likePost + '/like',
+                    { method: 'POST' }
+                );
+
+                b.classList.toggle('liked', d.liked);
+                b.textContent = `♥ ${d.likes}`;
+            };
+        });
+
+        // Edycja profilu
+        const pf = document.getElementById('profileForm');
+
+        if (pf) {
+            pf.onsubmit = async e => {
+                e.preventDefault();
+
+                try {
+                    const d = await api('/api/me/profile', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(
+                            Object.fromEntries(new FormData(pf))
+                        )
+                    });
+
+                    localStorage.setItem('mh_token', d.token);
+
+                    msgProfile(
+                        d.emailChanged
+                            ? 'Profil zapisany. Na nowy adres e-mail wysłano link weryfikacyjny.'
+                            : 'Profil zapisany.'
+                    );
+
+                    setTimeout(() => location.reload(), 1000);
+
+                } catch (x) {
+                    msgProfile(x.message);
+                }
+            };
+        }
+
+        // Ponowne wysłanie maila weryfikacyjnego
+        const resendBtn = document.getElementById('resendVerification');
+
+        if (resendBtn) {
+            resendBtn.onclick = async () => {
+                try {
+                    resendBtn.disabled = true;
+                    resendBtn.textContent = 'Wysyłanie...';
+
+                    await api('/api/auth/resend-verification', {
+                        method: 'POST'
+                    });
+
+                    msgProfile(
+                        'Nowy mail weryfikacyjny został wysłany.'
+                    );
+
+                    resendBtn.textContent = 'Wysłano';
+
+                } catch (x) {
+                    msgProfile(x.message);
+                    resendBtn.disabled = false;
+                    resendBtn.textContent =
+                        'Wyślij ponownie mail weryfikacyjny';
+                }
+            };
+        }
+
+        // Zmiana profilówki
+        const af = document.getElementById('avatarForm');
+
+        if (af) {
+            af.onsubmit = async e => {
+                e.preventDefault();
+
+                try {
+                    await api('/api/profile/avatar', {
+                        method: 'POST',
+                        body: new FormData(af)
+                    });
+
+                    msgProfile(
+                        'Profilówka została zmieniona.'
+                    );
+
+                    setTimeout(() => location.reload(), 400);
+
+                } catch (x) {
+                    msgProfile(x.message);
+                }
+            };
+        }
+
+    } catch (e) {
+        el.textContent = e.message;
+    }
 }
 
 function msgProfile(t) { const el=document.getElementById('profileMessage'); if(el) el.textContent=t; }
@@ -794,72 +1105,175 @@ function setupGalleryEvents() {
 
 
 // Zarządzanie użytkownikami dla admina
+// Zarządzanie użytkownikami dla admina
 async function loadAdminUsers() {
     const tbody = document.getElementById('usersList');
+
     if (!tbody) return;
 
     try {
         const users = await api('/api/admin/users');
-        tbody.innerHTML = users.map(u => `
-      <tr style="border-bottom: 1px solid #222;">
-        <td style="padding: 10px;">${u.id}</td>
-        <td>
-          <a class="profile-link" href="/profile?u=${encodeURIComponent(u.username)}">${esc(u.username)}</a>
-          <span class="user-email">(${esc(u.email)})</span>
-        </td>
-        <td style="padding: 10px;"><span class="badge">${esc(u.role)}</span></td>
-        <td style="padding: 10px;">
-          ${u.role !== 'admin' ? `
-            <button class="btn ghost" style="padding: 4px 8px; font-size: 12px;" data-role-user="${u.id}" data-role="admin">Daj Admina</button>
-          ` : `
-            <button class="btn ghost" style="padding: 4px 8px; font-size: 12px;" data-role-user="${u.id}" data-role="user">Odbierz Admina</button>
-          `}
-          <button class="btn" style="padding: 4px 8px; font-size: 12px; background: #c0392b;" data-delete-user="${u.id}">Usuń</button>
-        </td>
-      </tr>
-    `).join('');
 
-        // Obsługa zmiany roli
-        tbody.querySelectorAll('[data-role-user]').forEach(btn => {
-            btn.onclick = async () => {
-                const userId = btn.dataset.roleUser;
-                const newRole = btn.dataset.role;
-                if (!confirm(`Czy na pewno chcesz zmienić rolę użytkownika na ${newRole}?`)) return;
+        tbody.innerHTML = users
+            .map(
+                (u) => `
+                    <tr style="border-bottom: 1px solid #222;">
+                        <td style="padding: 10px;">
+                            ${u.id}
+                        </td>
 
-                try {
-                    await api(`/api/admin/users/${userId}/role`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ role: newRole })
-                    });
-                    msg('Rola została pomyślnie zmieniona.');
-                    loadAdminUsers();
-                } catch (e) {
-                    msg(e.message);
+                        <td style="padding: 10px;">
+                            <a
+                                class="profile-link"
+                                href="/profile?u=${encodeURIComponent(u.username)}"
+                            >
+                                ${esc(u.username)}
+                            </a>
+                        </td>
+
+                        <td style="padding: 10px;">
+                            ${esc(u.email)}
+                        </td>
+
+                        <td style="padding: 10px;">
+                            ${
+                    u.email_verified
+                        ? '<span class="email-status verified">✓ Zweryfikowany</span>'
+                        : '<span class="email-status not-verified">✗ Niezweryfikowany</span>'
                 }
-            };
-        });
+                        </td>
 
-        // Obsługa usuwania użytkownika
-        tbody.querySelectorAll('[data-delete-user]').forEach(btn => {
-            btn.onclick = async () => {
-                const userId = btn.dataset.deleteUser;
-                if (!confirm('Czy na pewno chcesz usunąć tego użytkownika? Operacja jest nieodwracalna.')) return;
+                        <td style="padding: 10px;">
+                            <span class="badge">
+                                ${esc(u.role)}
+                            </span>
+                        </td>
 
-                try {
-                    await api(`/api/admin/users/${userId}`, { method: 'DELETE' });
-                    msg('Użytkownik został usunięty.');
-                    loadAdminUsers();
-                } catch (e) {
-                    msg(e.message);
+                        <td style="padding: 10px;">
+                            ${
+                    u.role !== 'admin'
+                        ? `
+                                        <button
+                                            class="btn ghost"
+                                            style="
+                                                padding: 4px 8px;
+                                                font-size: 12px;
+                                            "
+                                            data-role-user="${u.id}"
+                                            data-role="admin"
+                                        >
+                                            Daj Admina
+                                        </button>
+                                    `
+                        : `
+                                        <button
+                                            class="btn ghost"
+                                            style="
+                                                padding: 4px 8px;
+                                                font-size: 12px;
+                                            "
+                                            data-role-user="${u.id}"
+                                            data-role="user"
+                                        >
+                                            Odbierz Admina
+                                        </button>
+                                    `
                 }
-            };
-        });
 
+                            <button
+                                class="btn"
+                                style="
+                                    padding: 4px 8px;
+                                    font-size: 12px;
+                                    background: #c0392b;
+                                "
+                                data-delete-user="${u.id}"
+                            >
+                                Usuń
+                            </button>
+                        </td>
+                    </tr>
+                `
+            )
+            .join('');
+
+        // Zmiana roli użytkownika
+        tbody
+            .querySelectorAll('[data-role-user]')
+            .forEach((button) => {
+                button.onclick = async () => {
+                    const userId = button.dataset.roleUser;
+                    const newRole = button.dataset.role;
+
+                    if (
+                        !confirm(
+                            `Czy na pewno chcesz zmienić rolę użytkownika na ${newRole}?`
+                        )
+                    ) {
+                        return;
+                    }
+
+                    try {
+                        await api(`/api/admin/users/${userId}/role`, {
+                            method: 'PATCH',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                role: newRole
+                            })
+                        });
+
+                        msg('Rola została pomyślnie zmieniona.');
+
+                        await loadAdminUsers();
+                    } catch (e) {
+                        msg(e.message);
+                    }
+                };
+            });
+
+        // Usuwanie użytkownika
+        tbody
+            .querySelectorAll('[data-delete-user]')
+            .forEach((button) => {
+                button.onclick = async () => {
+                    const userId = button.dataset.deleteUser;
+
+                    if (
+                        !confirm(
+                            'Czy na pewno chcesz usunąć tego użytkownika? Operacja jest nieodwracalna.'
+                        )
+                    ) {
+                        return;
+                    }
+
+                    try {
+                        await api(`/api/admin/users/${userId}`, {
+                            method: 'DELETE'
+                        });
+
+                        msg('Użytkownik został usunięty.');
+
+                        await loadAdminUsers();
+                    } catch (e) {
+                        msg(e.message);
+                    }
+                };
+            });
     } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="4" style="padding: 10px; color: red;">${esc(e.message)}</td></tr>`;
+        tbody.innerHTML = `
+            <tr>
+                <td
+                    colspan="6"
+                    style="padding: 10px; color: red;"
+                >
+                    ${esc(e.message)}
+                </td>
+            </tr>
+        `;
     }
-};
+}
 
 
 

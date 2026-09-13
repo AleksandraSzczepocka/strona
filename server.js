@@ -214,6 +214,7 @@ function publicUser(user) {
         id: user.id,
         username: user.username,
         email: user.email,
+        email_verified: user.email_verified === 1,
         role: user.role,
         bio: user.bio || '',
         avatar_url: user.avatar_url || '',
@@ -416,6 +417,54 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
+app.post('/api/auth/resend-verification', auth, async (req, res) => {
+    try {
+        const user = stmtGetUserById.get(req.user.id);
+
+        if (!user) {
+            return res.status(404).json({
+                error: 'Użytkownik nie istnieje'
+            });
+        }
+
+        if (user.email_verified === 1) {
+            return res.status(400).json({
+                error: 'Adres e-mail jest już zweryfikowany.'
+            });
+        }
+
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const verificationExpires = Date.now() + 24 * 60 * 60 * 1000;
+
+        db.prepare(`
+            UPDATE users
+            SET verification_token = ?,
+                verification_expires = ?
+            WHERE id = ?
+        `).run(
+            verificationToken,
+            verificationExpires,
+            user.id
+        );
+
+        await sendVerificationEmail(
+            user.email,
+            verificationToken
+        );
+
+        res.json({
+            message: 'Nowy mail weryfikacyjny został wysłany.'
+        });
+
+    } catch (err) {
+        console.error('Błąd ponownego wysyłania maila:', err);
+
+        res.status(500).json({
+            error: 'Nie udało się wysłać maila weryfikacyjnego.'
+        });
+    }
+});
+
 app.get('/api/auth/verify-email', (req, res) => {
     const { token } = req.query;
 
@@ -488,16 +537,115 @@ app.get('/api/profile/:username', optionalAuth, (req, res) => {
     res.json({ user: publicUser(user), posts, replies, likedPosts, likedReplies });
 });
 
-app.put('/api/me/profile', auth, validate(profileSchema), (req, res) => {
+app.put('/api/me/profile', auth, validate(profileSchema), async (req, res) => {
     const { username, email, bio } = req.body;
+
     try {
-        db.prepare('UPDATE users SET username=?, email=?, bio=? WHERE id=?').run(username, email, bio, req.user.id);
+        const currentUser = stmtGetUserById.get(req.user.id);
+
+        if (!currentUser) {
+            return res.status(404).json({
+                error: 'Użytkownik nie istnieje'
+            });
+        }
+
+        const newEmail = String(email).trim().toLowerCase();
+        const emailChanged = currentUser.email.toLowerCase() !== newEmail;
+
+        let verificationToken = null;
+        let verificationExpires = null;
+
+        // Jeżeli użytkownik zmienił adres e-mail,
+        // trzeba go zweryfikować ponownie.
+        if (emailChanged) {
+            verificationToken = crypto.randomBytes(32).toString('hex');
+            verificationExpires = Date.now() + 24 * 60 * 60 * 1000;
+        }
+
+        if (emailChanged) {
+            db.prepare(`
+                UPDATE users
+                SET username = ?,
+                    email = ?,
+                    bio = ?,
+                    email_verified = 0,
+                    verification_token = ?,
+                    verification_expires = ?
+                WHERE id = ?
+            `).run(
+                username,
+                newEmail,
+                bio,
+                verificationToken,
+                verificationExpires,
+                req.user.id
+            );
+        } else {
+            db.prepare(`
+                UPDATE users
+                SET username = ?,
+                    bio = ?
+                WHERE id = ?
+            `).run(
+                username,
+                bio,
+                req.user.id
+            );
+        }
+
         const updated = stmtGetUserById.get(req.user.id);
-        const token = jwt.sign({ id: updated.id, username: updated.username, role: updated.role }, JWT_SECRET, { expiresIn: '2h' });
-        res.cookie('token', token, { httpOnly: true, maxAge: 2 * 3600 * 1000 });
-        res.json({ user: publicUser(updated), token });
-    } catch {
-        res.status(409).json({ error: 'Nazwa użytkownika lub e-mail jest już zajęty' });
+
+        // Jeżeli zmieniono e-mail, wysyłamy nowy mail weryfikacyjny.
+        if (emailChanged) {
+            try {
+                await sendVerificationEmail(
+                    newEmail,
+                    verificationToken
+                );
+            } catch (mailError) {
+                console.error('Błąd wysyłania maila weryfikacyjnego:', mailError);
+
+                return res.status(500).json({
+                    error: 'Adres e-mail został zmieniony, ale nie udało się wysłać maila weryfikacyjnego.'
+                });
+            }
+        }
+
+        const token = jwt.sign(
+            {
+                id: updated.id,
+                username: updated.username,
+                role: updated.role
+            },
+            JWT_SECRET,
+            {
+                expiresIn: '2h'
+            }
+        );
+
+        res.cookie('token', token, {
+            httpOnly: true,
+            maxAge: 2 * 3600 * 1000
+        });
+
+        res.json({
+            user: publicUser(updated),
+            token,
+            emailChanged
+        });
+
+    } catch (err) {
+        console.error('Błąd aktualizacji profilu:', err);
+
+        if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+            return res.status(409).json({
+                error: 'Nazwa użytkownika lub e-mail jest już zajęty'
+            });
+        }
+
+        res.status(500).json({
+            error: 'Nie udało się zaktualizować profilu'
+        });
     }
 });
 
@@ -1023,10 +1171,22 @@ app.delete('/api/gallery/:id', auth, admin, (req, res) => {
 
 app.get('/api/admin/users', auth, admin, (req, res) => {
     try {
-        const users = db.prepare('SELECT id, username, email, role FROM users ORDER BY id DESC').all();
+        const users = db.prepare(`
+            SELECT
+                id,
+                username,
+                email,
+                email_verified,
+                role
+            FROM users
+            ORDER BY id DESC
+        `).all();
+
         res.json(users);
     } catch (err) {
-        res.status(500).json({ error: 'Błąd pobierania bazy danych' });
+        res.status(500).json({
+            error: 'Błąd pobierania bazy danych'
+        });
     }
 });
 
