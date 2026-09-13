@@ -100,30 +100,6 @@
     margin: auto;
     padding: 80px 25px 110px;
 
-    background-image:
-            linear-gradient(rgba(0,0,0,.5), rgba(0,0,0,.5)),
-            url("/plakat1.png"),
-            linear-gradient(rgba(0,0,0,.5), rgba(0,0,0,.5)),
-            url("/plakat2.png");
-
-    background-size:
-            17% 70%,
-            17% 70%,
-            17% 70%,
-            17% 70%;
-
-    background-position:
-            90% 50%,
-            90% 50%,
-            4% 80%,
-            4% 80%;
-
-    background-repeat:
-            no-repeat,
-            no-repeat,
-            no-repeat,
-            no-repeat;
-
     h1 {
         font-size: 65px;
         letter-spacing: -4px;
