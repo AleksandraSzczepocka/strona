@@ -1,5 +1,6 @@
-﻿
-
+﻿const crypto = require('crypto');
+require('dotenv').config();
+const nodemailer = require('nodemailer');
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -36,7 +37,10 @@ CREATE TABLE IF NOT EXISTS users (
   role TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('user','admin')),
   bio TEXT NOT NULL DEFAULT '',
   avatar_url TEXT NOT NULL DEFAULT '',
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  email_verified INTEGER NOT NULL DEFAULT 0,
+  verification_token TEXT,
+  verification_expires INTEGER 
 );
 CREATE TABLE IF NOT EXISTS posts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -116,7 +120,17 @@ if (!replyColumns.includes('is_active')) db.exec("ALTER TABLE forum_replies ADD 
 const userColumns = db.prepare('PRAGMA table_info(users)').all().map(c => c.name);
 if (!userColumns.includes('bio')) db.exec("ALTER TABLE users ADD COLUMN bio TEXT NOT NULL DEFAULT ''");
 if (!userColumns.includes('avatar_url')) db.exec("ALTER TABLE users ADD COLUMN avatar_url TEXT NOT NULL DEFAULT ''");
+if (!userColumns.includes('email_verified')) {
+    db.exec("ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0");
+}
 
+if (!userColumns.includes('verification_token')) {
+    db.exec("ALTER TABLE users ADD COLUMN verification_token TEXT");
+}
+
+if (!userColumns.includes('verification_expires')) {
+    db.exec("ALTER TABLE users ADD COLUMN verification_expires INTEGER");
+}
 // Statyczne, przygotowane zapytania (zapobiegają wyciekom pamięci w V8)
 const stmtGetUserByEmail = db.prepare('SELECT * FROM users WHERE email = ?');
 const stmtGetUserById = db.prepare('SELECT * FROM users WHERE id = ?');
@@ -290,20 +304,89 @@ async function verifyAltchaPayload(payload) {
     }
 }
 
+const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASSWORD
+    }
+});
+
+async function sendVerificationEmail(email, token) {
+    const verificationLink =
+        `http://localhost:3000/api/auth/verify-email?token=${token}`;
+
+    await transporter.sendMail({
+        from: process.env.SMTP_USER,
+        to: email,
+        subject: 'Potwierdź adres e-mail - Mimcry Hunters',
+        html: `
+            <h2>Witaj w Mimcry Hunters!</h2>
+            <p>Aby zakończyć rejestrację, kliknij poniższy link:</p>
+            <a href="${verificationLink}">
+                Potwierdź adres e-mail
+            </a>
+            <p>Link jest ważny przez 24 godziny.</p>
+        `
+    });
+}
+
 app.post('/api/auth/register', validate(registerSchema), async (req, res) => {
     const { username, email, password, altcha } = req.body;
 
     const isVerified = await verifyAltchaPayload(altcha);
+
     if (!isVerified) {
-        return res.status(400).json({ error: 'Nieprawidłowa lub wygasła weryfikacja Altcha.' });
+        return res.status(400).json({
+            error: 'Nieprawidłowa lub wygasła weryfikacja Altcha.'
+        });
     }
 
     try {
         const hash = bcrypt.hashSync(password, 10);
-        const result = db.prepare('INSERT INTO users(username,email,password_hash) VALUES(?,?,?)').run(username, email, hash);
-        res.status(201).json({ id: result.lastInsertRowid, message: 'Konto utworzone pomyślnie!' });
+
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const verificationExpires = Date.now() + 24 * 60 * 60 * 1000;
+
+        const result = db.prepare(`
+            INSERT INTO users(
+                username,
+                email,
+                password_hash,
+                email_verified,
+                verification_token,
+                verification_expires
+            )
+            VALUES (?, ?, ?, 0, ?, ?)
+        `).run(
+            username,
+            email,
+            hash,
+            verificationToken,
+            verificationExpires
+        );
+
+        await sendVerificationEmail(email, verificationToken);
+
+        res.status(201).json({
+            id: result.lastInsertRowid,
+            message: 'Konto utworzone. Sprawdź swój e-mail.'
+        });
+
     } catch (err) {
-        res.status(409).json({ error: 'Nazwa użytkownika lub e-mail jest już zajęty' });
+        console.error('Błąd rejestracji:', err);
+
+        if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+            return res.status(409).json({
+                error: 'Nazwa użytkownika lub e-mail jest już zajęty'
+            });
+        }
+
+        return res.status(500).json({
+            error: 'Błąd serwera podczas rejestracji'
+        });
     }
 });
 
@@ -333,7 +416,32 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
+app.get('/api/auth/verify-email', (req, res) => {
+    const { token } = req.query;
 
+    const user = db.prepare(`
+        SELECT * FROM users
+        WHERE verification_token = ?
+    `).get(token);
+
+    if (!user) {
+        return res.status(400).send('Nieprawidłowy link weryfikacyjny.');
+    }
+
+    if (Date.now() > user.verification_expires) {
+        return res.status(400).send('Link weryfikacyjny wygasł.');
+    }
+
+    db.prepare(`
+        UPDATE users
+        SET email_verified = 1,
+            verification_token = NULL,
+            verification_expires = NULL
+        WHERE id = ?
+    `).run(user.id);
+
+    res.send('Adres e-mail został pomyślnie zweryfikowany!');
+});
 
 app.get('/api/me', auth, (req, res) => {
     const user = stmtGetUserById.get(req.user.id);
