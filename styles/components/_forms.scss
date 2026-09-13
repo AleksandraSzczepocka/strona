@@ -41,9 +41,9 @@
 
 
 .auth-card, .new-thread, .admin-panel {
-    input, textarea {
+    input {
         width: 100%;
-        background: #070808;
+        background: #191b18;
         border: 1px solid var(--line);
         padding: 13px;
         color: var(--white);
@@ -55,10 +55,29 @@
     }
 }
 
+textarea {
+    background: #191b18;
+    color: var(--white);
+}
+
+input {
+    width: 100%;
+    background: #191b18;
+    border: 1px solid var(--line);
+    padding: 13px;
+    color: var(--white);
+    outline: 0;
+
+    &:focus {
+        border-color: var(--green);
+    }
+}
+
 .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
+    background: #0d0f0d;
 
     @media(max-width: 800px) {
         grid-template-columns: 1fr;

@@ -153,7 +153,8 @@
 .empty {
     border: 1px dashed var(--line);
     padding: 25px;
-    color: var(--muted)
+    color: var(--muted);
+    background: #0d0f0d;
 }
 
 .profile-link {

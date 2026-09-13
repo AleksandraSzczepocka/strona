@@ -2,22 +2,28 @@
 {% block title %}MIMICRY EXPERIMENTS - Forum{% endblock %}
 
 {% block content %}
-    <main class="page">
-        <div class="eyebrow">SPOŁECZNOŚĆ</div>
-        <h1>FORUM</h1>
-        <p class="lead">Dyskusje o grze, teoriach, zagadkach i błędach.</p>
-        <div id="threadView"></div>
-        <div id="threadList">
-            <div id="threads" class="forum"></div>
+    <main class="forum-style">
+        <div class="forum-content">
+            <div class="eyebrow">SPOŁECZNOŚĆ</div>
+            <h1>FORUM</h1>
+            <p class="lead">Dyskusje o grze, teoriach, zagadkach i błędach.</p>
+
+            <div id="threadView"></div>
+
+            <div id="threadList">
+                <div id="threads" class="forum"></div>
+            </div>
+
+            <div class="new-thread">
+                <h2>NOWY TEMAT</h2>
+                <form id="threadForm">
+                    <input name="title" placeholder="Tytuł tematu" required>
+                    <textarea name="content" placeholder="Treść..." required></textarea>
+                    <button class="btn">Opublikuj</button>
+                </form>
+            </div>
+
+            <div id="message"></div>
         </div>
-        <div class="new-thread">
-            <h2>NOWY TEMAT</h2>
-            <form id="threadForm">
-                <input name="title" placeholder="Tytuł tematu" required>
-                <textarea name="content" placeholder="Treść..." required></textarea>
-                <button class="btn">Opublikuj</button>
-            </form>
-        </div>
-        <div id="message"></div>
     </main>
 {% endblock %}

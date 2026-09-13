@@ -10,6 +10,7 @@
     display: grid;
     grid-template-columns: 1fr 90px;
     gap: 20px;
+    background-color: #0d0f0d;
 
     &:last-child {
         border: 0;

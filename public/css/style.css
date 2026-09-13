@@ -4,9 +4,9 @@
   /* Surowe, oldschoolowe RGB */
   --black: #050505; /* Czysta czerń zamiast wchodzącej w brąz */
   --white: #e0e0e0;
-  --muted: #777777; /* Czysta, wyprana szarość */
+  --muted: #d5d5d5; /* Czysta, wyprana szarość */
   --line: #e4e4e4;
-  --red: #cd0000;
+  --red: #ba0000;
   --green: #00aa29;
   --blue: #0044ff; /* Nowy kolor dla trzeciego elementu mechaniki */
   --shadow: #1e1d1d;
@@ -51,7 +51,7 @@ a {
 
 #a11yToggle {
   text-transform: uppercase;
-  background: #2563eb;
+  background: #424242;
   color: #ffffff;
   border: none;
   padding: 12px 18px;
@@ -59,7 +59,7 @@ a {
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
-  box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);
+  box-shadow: 0 10px 25px -5px rgba(66, 66, 66, 0.4);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -67,7 +67,7 @@ a {
 }
 
 #a11yToggle:hover {
-  background: #1d4ed8;
+  background: var(--green);
   transform: translateY(-2px);
 }
 
@@ -145,16 +145,44 @@ html.light-theme .a11y-panel button:hover {
 
 /*Jasny motyw (nadpisuje czarne tło i ciemne elementy) */
 html.light-theme {
-  background-color: #f4f4f6 !important;
+  background-color: #babfc6 !important;
   color: #1a1a1a !important;
 }
 html.light-theme body, html.light-theme main, html.light-theme div, html.light-theme article, html.light-theme section, html.light-theme form, html.light-theme header, html.light-theme footer, html.light-theme .post-card, html.light-theme .thread, html.light-theme .reply, html.light-theme .profile-head {
-  background-color: #ffffff !important;
+  background-color: #d3d3dc !important;
   color: #1a1a1a !important;
-  border-color: #dddddd !important;
+  border-color: #2b2b2b !important;
 }
 html.light-theme a {
   color: #0056b3 !important;
+}
+html.light-theme p {
+  color: #111 !important;
+}
+html.light-theme textarea {
+  background-color: #d3d3dc !important;
+}
+html.light-theme .post-card {
+  background-color: #c1c1cc !important;
+}
+html.light-theme .post-content {
+  background-color: #c1c1cc !important;
+}
+html.light-theme .post-header {
+  background-color: #c1c1cc !important;
+}
+html.light-theme .post-footer {
+  background-color: #c1c1cc !important;
+}
+html.light-theme h2 {
+  color: #1a1a1a;
+}
+html.light-theme input {
+  background-color: #c1c1cc !important;
+  color: #1a1a1a !important;
+}
+html.light-theme .img-title {
+  color: #1a1a1a !important;
 }
 html.light-theme button, html.light-theme .btn {
   background-color: #f5f5f5 !important;
@@ -225,6 +253,22 @@ header nav a:hover, header nav a.active {
   margin: 10px 0;
 }
 
+.forum-style {
+  padding: 80px 25px 110px;
+  background: url("/siatka2.svg") no-repeat 30% -22%;
+  background-size: 120%;
+}
+
+.forum-content {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.forum-content h1 {
+  font-size: 65px;
+  letter-spacing: -4px;
+  margin: 10px 0;
+}
+
 .gallery-page {
   position: relative;
 }
@@ -248,10 +292,6 @@ header nav a:hover, header nav a.active {
   max-width: 1150px;
   margin: auto;
   padding: 80px 25px 110px;
-  background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("/plakat1.png"), linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("/plakat2.png");
-  background-size: 17% 70%, 17% 70%, 17% 70%, 17% 70%;
-  background-position: 90% 50%, 90% 50%, 4% 80%, 4% 80%;
-  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
 }
 .page-gallery h1 {
   font-size: 65px;
@@ -362,6 +402,14 @@ header nav a:hover, header nav a.active {
   font-size: 13px;
 }
 
+.cards img {
+  display: block;
+  margin: 0 auto;
+  width: 250px;
+  height: auto;
+  object-fit: contain;
+}
+
 .dark {
   background: #0c0d0c;
   border-top: 1px solid var(--line);
@@ -469,7 +517,7 @@ textarea {
 
 .btn {
   display: inline-block;
-  border: 1px solid var(--green);
+  border: 1px solid #4b100f;
   background: var(--green);
   color: #080a05;
   padding: 12px 18px;
@@ -490,7 +538,7 @@ textarea {
 .badge {
   font: 10px monospace;
   color: var(--green);
-  border: 1px solid #34470d;
+  border: 1px solid #ffffff;
   padding: 5px 8px;
 }
 .badge.badge-hidden {
@@ -546,15 +594,32 @@ textarea {
   color: var(--green);
 }
 
-.auth-card input, .auth-card textarea, .new-thread input, .new-thread textarea, .admin-panel input, .admin-panel textarea {
+.auth-card input, .new-thread input, .admin-panel input {
   width: 100%;
-  background: #070808;
+  background: #191b18;
   border: 1px solid var(--line);
   padding: 13px;
   color: var(--white);
   outline: 0;
 }
-.auth-card input:focus, .auth-card textarea:focus, .new-thread input:focus, .new-thread textarea:focus, .admin-panel input:focus, .admin-panel textarea:focus {
+.auth-card input:focus, .new-thread input:focus, .admin-panel input:focus {
+  border-color: var(--green);
+}
+
+textarea {
+  background: #191b18;
+  color: var(--white);
+}
+
+input {
+  width: 100%;
+  background: #191b18;
+  border: 1px solid var(--line);
+  padding: 13px;
+  color: var(--white);
+  outline: 0;
+}
+input:focus {
   border-color: var(--green);
 }
 
@@ -562,6 +627,7 @@ textarea {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  background: #0d0f0d;
 }
 @media (max-width: 800px) {
   .form-grid {
@@ -729,6 +795,7 @@ textarea {
   display: grid;
   grid-template-columns: 1fr 90px;
   gap: 20px;
+  background-color: #0d0f0d;
 }
 .thread:last-child {
   border: 0;
@@ -1340,6 +1407,7 @@ textarea {
   border: 1px dashed var(--line);
   padding: 25px;
   color: var(--muted);
+  background: #0d0f0d;
 }
 
 .profile-link {
