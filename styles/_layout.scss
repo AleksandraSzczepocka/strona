@@ -214,8 +214,17 @@
 
 .cards article {
     background: #0d0f0d;
-    padding: 35px
+    padding: 35px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    will-change: transform;
 
+    &:hover {
+        transform: scale(1.05);
+        position: relative;
+        z-index: 4;
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.4), 0 0 30px rgba(255, 0, 0, 0.6), 0 0 60px rgba(255, 0, 0, 0.3);
+        border-color: rgba(255, 255, 255, 0.8);
+    }
 }
 
 .cards i {
@@ -315,10 +324,31 @@ textarea {
 
 @media(max-width: 800px) {
     header {
-        padding: 0 18px;
+        height: auto;
+        flex-wrap: wrap;
+        padding: 10px 15px;
+        gap: 10px;
+        justify-content:space-evenly;
 
         nav {
-            display: none;
+            display: flex !important; 
+            order: 3;
+            width: 100%;
+            justify-content: space-between;
+            overflow-x: auto; 
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .actions {
+            display: flex;
+            gap: 5px;
+
+            a, button {
+                font-size: 11px;
+                padding: 4px 6px;
+                white-space: nowrap;
+            }
         }
     }
 
@@ -346,5 +376,9 @@ textarea {
     footer {
         flex-direction: column;
         gap: 10px;
+    }
+
+    .cards {
+        grid-template-columns: 1fr; /* Na telefonach karty będą układać się jedna pod drugą */
     }
 }

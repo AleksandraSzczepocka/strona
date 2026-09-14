@@ -95,3 +95,10 @@
 .stat small {
     color: var(--muted)
 }
+
+@media(max-width: 800px) {
+
+    .stats {
+        grid-template-columns: repeat(3,1fr);
+    }
+}
