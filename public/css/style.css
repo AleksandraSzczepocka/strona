@@ -149,7 +149,30 @@ html.light-theme {
   color: #1a1a1a !important;
 }
 html.light-theme body, html.light-theme main, html.light-theme div, html.light-theme article, html.light-theme section, html.light-theme form, html.light-theme header, html.light-theme footer, html.light-theme .post-card, html.light-theme .thread, html.light-theme .reply, html.light-theme .profile-head {
-  background-color: #d3d3dc !important;
+  background-color: #cdc5c5 !important;
+  color: #1a1a1a !important;
+  border-color: #2b2b2b !important;
+}
+html.light-theme .hero-visual img {
+  filter: brightness(3);
+}
+html.light-theme article {
+  background-color: #e3dfdf !important;
+}
+html.light-theme .new-thread {
+  background: #e3dfdf !important;
+}
+html.light-theme .thread {
+  background: #e3dfdf !important;
+}
+html.light-theme .form-grid {
+  background-color: #e3dfdf !important;
+}
+html.light-theme .card-info {
+  background-color: #e3dfdf !important;
+}
+html.light-theme header {
+  background-color: #e3dfdf !important;
   color: #1a1a1a !important;
   border-color: #2b2b2b !important;
 }
@@ -160,25 +183,38 @@ html.light-theme p {
   color: #111 !important;
 }
 html.light-theme textarea {
-  background-color: #d3d3dc !important;
+  background-color: #c3bebe !important;
+  color: #1a1a1a !important;
 }
 html.light-theme .post-card {
-  background-color: #c1c1cc !important;
+  background-color: #e3dfdf !important;
 }
 html.light-theme .post-content {
-  background-color: #c1c1cc !important;
+  background-color: #e3dfdf !important;
 }
 html.light-theme .post-header {
-  background-color: #c1c1cc !important;
+  background: #e3dfdf !important;
+}
+html.light-theme .auth {
+  background: #cdc5c5 !important;
+}
+html.light-theme .auth-card {
+  background: #e3dfdf !important;
+}
+html.light-theme .empty {
+  background: #e3dfdf !important;
+}
+html.light-theme form {
+  background-color: #e3dfdf !important;
 }
 html.light-theme .post-footer {
-  background-color: #c1c1cc !important;
+  background-color: #e3dfdf !important;
 }
 html.light-theme h2 {
   color: #1a1a1a;
 }
 html.light-theme input {
-  background-color: #c1c1cc !important;
+  background-color: #cfcaca !important;
   color: #1a1a1a !important;
 }
 html.light-theme .img-title {
@@ -192,8 +228,14 @@ html.light-theme button, html.light-theme .btn {
 html.light-theme button:hover, html.light-theme .btn:hover {
   background-color: #ddd !important;
 }
+html.light-theme .admin-panel {
+  background-color: #e3dfdf !important;
+}
 html.light-theme .section h2 {
   text-shadow: none;
+}
+html.light-theme .actions {
+  background: none;
 }
 
 html.large-text {

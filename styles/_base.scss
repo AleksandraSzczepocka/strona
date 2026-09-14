@@ -143,7 +143,39 @@ html.light-theme {
     color: #1a1a1a !important;
 
     body, main, div, article, section, form, header, footer, .post-card, .thread, .reply, .profile-head {
-        background-color: #d3d3dc !important;
+        background-color: #cdc5c5 !important;
+        color: #1a1a1a !important;
+        border-color: #2b2b2b !important;
+    }
+
+    .hero-visual {
+        img {
+            filter: brightness(3);
+        }
+    }
+
+    article {
+        background-color: #e3dfdf !important;
+    }
+
+    .new-thread {
+        background: #e3dfdf !important;
+    }
+
+    .thread {
+        background: #e3dfdf !important;
+    }
+
+    .form-grid {
+        background-color: #e3dfdf !important;
+    }
+
+    .card-info {
+        background-color: #e3dfdf !important;
+    }
+
+    header {
+        background-color: #e3dfdf !important;
         color: #1a1a1a !important;
         border-color: #2b2b2b !important;
     }
@@ -157,23 +189,40 @@ html.light-theme {
     }
 
     textarea {
-        background-color: #d3d3dc !important;
+        background-color: #c3bebe !important;
+        color: #1a1a1a !important;
     }
 
     .post-card {
-        background-color: #c1c1cc !important;
+        background-color: #e3dfdf !important;
     }
 
     .post-content {
-        background-color: #c1c1cc !important;
+        background-color: #e3dfdf !important;
     }
 
     .post-header {
-        background-color: #c1c1cc !important;
+        background: #e3dfdf !important;
+    }
+
+    .auth {
+        background: #cdc5c5 !important;
+    }
+
+    .auth-card {
+        background: #e3dfdf !important;
+    }
+
+    .empty {
+        background: #e3dfdf !important;
+    }
+
+    form {
+        background-color: #e3dfdf !important;
     }
 
     .post-footer {
-        background-color: #c1c1cc !important;
+        background-color: #e3dfdf !important;
     }
 
     h2 {
@@ -181,7 +230,7 @@ html.light-theme {
     }
 
     input {
-        background-color: #c1c1cc !important;
+        background-color: #cfcaca !important;
         color: #1a1a1a !important;
     }
 
@@ -199,9 +248,19 @@ html.light-theme {
         }
     }
 
+
+    .admin-panel {
+        background-color: #e3dfdf !important;
+    }
+
     .section h2 {
         text-shadow: none;
     }
+
+    .actions {
+        background: none;
+    }
+
 }
 
 html.large-text {
